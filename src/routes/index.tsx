@@ -1,6 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Globe, Instagram, Twitter } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  Globe,
+  Instagram,
+  Twitter,
+  Upload,
+} from "lucide-react";
 import AboutSection from "@/components/AboutSection";
 import FeaturedVideoSection from "@/components/FeaturedVideoSection";
 import PhilosophySection from "@/components/PhilosophySection";
@@ -9,17 +16,17 @@ import ServicesSection from "@/components/ServicesSection";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Asme — Know it then all" },
+      { title: "Short It — AI Short-Form Video Generator" },
       {
         name: "description",
         content:
-          "Asme is a strategy and design studio turning curiosity into research, insight, and standout digital experiences.",
+          "Short It turns your idea or script into engaging short-form videos for TikTok, YouTube Shorts, Instagram Reels and more — in minutes.",
       },
-      { property: "og:title", content: "Asme — Know it then all" },
+      { property: "og:title", content: "Short It — AI Short-Form Video Generator" },
       {
         property: "og:description",
         content:
-          "Strategy, research and design for minds that create, build, and inspire.",
+          "Describe your idea or upload a script and let AI create ready-to-publish short-form videos.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -29,6 +36,16 @@ export const Route = createFileRoute("/")({
 });
 
 const serif = { fontFamily: "'Instrument Serif', serif" };
+
+const PLATFORMS = [
+  "TikTok Shorts",
+  "YouTube Shorts",
+  "Instagram Reels",
+  "Facebook Reels",
+  "X Video",
+  "LinkedIn Video",
+];
+
 
 function useHeroVideoFade() {
   const videoRef = useRef<HTMLVideoElement>(null);
