@@ -107,6 +107,14 @@ function useHeroVideoFade() {
 
 function Index() {
   const videoRef = useHeroVideoFade();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [prompt, setPrompt] = useState("");
+  const [platform, setPlatform] = useState("");
+  const [scriptName, setScriptName] = useState<string | null>(null);
+
+  const handleGenerate = (e: React.FormEvent) => {
+    e.preventDefault();
+  };
 
   return (
     <main className="bg-black">
@@ -126,13 +134,20 @@ function Index() {
           <nav className="liquid-glass rounded-full max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
             <div className="flex items-center">
               <Globe size={24} className="text-white" />
-              <span className="ml-2 text-white font-semibold text-lg">Asme</span>
+              <div className="ml-2 flex flex-col leading-tight">
+                <span className="text-white font-semibold text-lg">
+                  Short It
+                </span>
+                <span className="hidden md:block text-white/40 text-[10px]">
+                  Turn ideas into viral short-form videos with AI.
+                </span>
+              </div>
               <div className="hidden md:flex items-center gap-8 ml-8">
-                {["Features", "Pricing", "About"].map((item) => (
+                {["Features", "How it Works", "Pricing", "FAQ"].map((item) => (
                   <a
                     key={item}
                     href="#"
-                    className="text-white/80 hover:text-white text-sm font-medium"
+                    className="text-white/80 hover:text-white text-sm font-medium whitespace-nowrap"
                   >
                     {item}
                   </a>
@@ -150,41 +165,99 @@ function Index() {
 
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 text-center -translate-y-[20%]">
           <h1
-            className="text-7xl md:text-8xl lg:text-9xl text-white tracking-tight whitespace-nowrap"
+            className="text-8xl md:text-9xl lg:text-[10rem] text-white tracking-tight whitespace-nowrap"
             style={serif}
           >
-            Know it <em className="italic">all</em>.
+            Short <em className="italic">It</em>.
           </h1>
 
           <div className="mt-10 max-w-xl w-full">
             <form
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={handleGenerate}
               className="liquid-glass rounded-full pl-6 pr-2 py-2 flex items-center gap-3"
             >
               <input
-                type="email"
-                placeholder="Enter your email"
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="What do you imagine?"
                 className="flex-1 bg-transparent outline-none text-white placeholder:text-white/40 text-sm"
               />
               <button
+                type="button"
+                aria-label="Upload Script"
+                title="Upload Script (PDF, DOCX, TXT)"
+                onClick={() => fileInputRef.current?.click()}
+                className="rounded-full p-3 text-white/70 hover:text-white transition-colors"
+              >
+                <Upload size={18} />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt"
+                className="hidden"
+                onChange={(e) =>
+                  setScriptName(e.target.files?.[0]?.name ?? null)
+                }
+              />
+              <button
                 type="submit"
-                aria-label="Subscribe"
+                aria-label="Generate Video"
                 className="bg-white rounded-full p-3 text-black"
               >
                 <ArrowRight size={20} />
               </button>
             </form>
 
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="liquid-glass rounded-full pl-5 pr-3 py-2 flex items-center gap-2">
+                <select
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                  aria-label="Select Platform"
+                  className="appearance-none bg-transparent outline-none text-white text-sm pr-1 [&>option]:bg-black"
+                >
+                  <option value="">Select Platform</option>
+                  {PLATFORMS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="text-white/60" />
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="liquid-glass rounded-full px-5 py-2 text-white text-sm font-medium flex items-center gap-2"
+              >
+                <Upload size={16} />
+                {scriptName ?? "Upload Script"}
+              </button>
+            </div>
+
+            <p className="mt-3 text-white/50 text-xs">
+              Already have a script? Upload it (PDF, DOCX, TXT) and let AI turn
+              it into a video.
+            </p>
+
             <p className="mt-6 text-white text-sm leading-relaxed px-4">
-              Stay updated with the latest news and insights. Subscribe to our
-              newsletter today and never miss out on exciting updates.
+              Bring your imagination to life. Describe your idea or upload a
+              script, and Short It transforms it into engaging short-form videos
+              optimized for TikTok, YouTube Shorts, Instagram Reels, and more—in
+              just minutes.
             </p>
           </div>
 
-          <button className="mt-8 liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium hover:bg-white/5 transition-colors">
-            Manifesto
+          <button
+            onClick={handleGenerate}
+            className="mt-8 liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium hover:bg-white/5 transition-colors"
+          >
+            Generate Video
           </button>
         </div>
+
 
         <div className="relative z-10 flex justify-center gap-4 pb-12">
           {[Instagram, Twitter, Globe].map((Icon, i) => (
