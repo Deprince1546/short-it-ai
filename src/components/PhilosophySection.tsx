@@ -46,26 +46,33 @@ export default function PhilosophySection() {
           >
             <div>
               <p className="text-white/40 text-xs tracking-widest uppercase mb-4">
-                Choose your space
+                Choose your platform
               </p>
               <p className="text-white/70 text-base md:text-lg leading-relaxed">
-                Every meaningful breakthrough begins at the intersection of
-                disciplined strategy and remarkable creative vision. We operate
-                at that crossroads, turning bold thinking into tangible outcomes
-                that move people and reshape industries.
+                We combine advanced AI with creative storytelling to help anyone
+                produce engaging short-form videos without expensive software or
+                editing skills. Simply describe your idea, choose a platform,
+                and let Short It do the rest.
               </p>
             </div>
             <div className="w-full h-px bg-white/10" />
             <div>
               <p className="text-white/40 text-xs tracking-widest uppercase mb-4">
-                Shape the future
+                How it works
               </p>
-              <p className="text-white/70 text-base md:text-lg leading-relaxed">
-                We believe that the best work emerges when curiosity meets
-                conviction. Our process is designed to uncover hidden
-                opportunities and translate them into experiences that resonate
-                long after the first impression.
-              </p>
+              <ol className="text-white/70 text-base md:text-lg leading-relaxed space-y-1">
+                <li>1. Enter an idea — or upload a script.</li>
+                <li>2. Select your target platform.</li>
+                <li>3. Click Generate Video.</li>
+                <li>4. Preview, then download or regenerate.</li>
+              </ol>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="mt-8 liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium"
+              >
+                Start Creating
+              </motion.button>
             </div>
           </motion.div>
         </div>

@@ -34,9 +34,11 @@ export default function FeaturedVideoSection() {
                   Our Approach
                 </p>
                 <p className="text-white text-sm md:text-base leading-relaxed">
-                  We believe in the power of curiosity-driven exploration. Every
-                  project starts with a question, and every answer opens a new
-                  door to innovation.
+                  Every great video begins with an idea. Our AI understands your
+                  prompt or uploaded script, generates compelling visuals,
+                  synchronizes voiceovers and captions, and produces
+                  ready-to-publish videos optimized for today's leading social
+                  platforms.
                 </p>
               </div>
               <motion.button
@@ -44,7 +46,7 @@ export default function FeaturedVideoSection() {
                 whileTap={{ scale: 0.95 }}
                 className="liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium self-start md:self-auto"
               >
-                Explore more
+                Learn More
               </motion.button>
             </div>
           </div>
