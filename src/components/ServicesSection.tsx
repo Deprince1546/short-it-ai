@@ -8,18 +8,26 @@ const cards = [
   {
     video:
       "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4",
-    tag: "Strategy",
-    title: "Research & Insight",
+    tag: "AI Video Generation",
+    title: "Prompt to Video",
     description:
-      "We dig deep into data, culture, and human behavior to surface the insights that drive meaningful, lasting change.",
+      "Describe your idea in one sentence and watch Short It transform it into a complete short-form video.",
   },
   {
     video:
       "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260324_151826_c7218672-6e92-402c-9e45-f1e0f454bdc4.mp4",
-    tag: "Craft",
-    title: "Design & Execution",
+    tag: "Scripts",
+    title: "Script to Video",
     description:
-      "From concept to launch, we obsess over every detail to deliver experiences that feel effortless and look extraordinary.",
+      "Upload your script and our AI automatically creates scenes, voiceovers, captions, transitions, and visuals.",
+  },
+  {
+    video:
+      "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260307_083826_e938b29f-a43a-41ec-a153-3d4730578ab8.mp4",
+    tag: "Distribution",
+    title: "Platform Optimization",
+    description:
+      "Every video is formatted and optimized for TikTok Shorts, YouTube Shorts, Instagram Reels, Facebook Reels, and more.",
   },
 ];
 
@@ -47,7 +55,7 @@ export default function ServicesSection() {
             What we do
           </h2>
           <span className="hidden md:block text-white/40 text-sm">
-            Our services
+            AI Video Generation
           </span>
         </motion.div>
 

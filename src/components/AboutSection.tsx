@@ -20,7 +20,7 @@ export default function AboutSection() {
           transition={{ duration: 0.6 }}
           className="text-white/40 text-sm tracking-widest uppercase"
         >
-          About Us
+          About Short It
         </motion.p>
         <motion.h2
           initial={{ opacity: 0, y: 40 }}
@@ -29,12 +29,23 @@ export default function AboutSection() {
           className="mt-6 text-4xl md:text-6xl lg:text-7xl text-white leading-[1.1] tracking-tight"
           style={serif}
         >
-          Pioneering <em className="italic text-white/60">ideas</em> for
-          <br className="hidden md:block" />{" "}
+          AI-powered video creation for{" "}
           <em className="italic text-white/60">
-            minds that create, build, and inspire.
+            creators, businesses, and storytellers.
           </em>
         </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="mt-8 max-w-3xl text-white/60 text-base md:text-lg leading-relaxed"
+        >
+          Short It helps anyone turn simple ideas or existing scripts into
+          professional short-form videos. Whether you're creating content for
+          TikTok, YouTube Shorts, Instagram Reels, or other platforms, our AI
+          handles the writing, visuals, voiceover, captions, and editing so you
+          can focus on your creativity.
+        </motion.p>
       </div>
     </section>
   );
