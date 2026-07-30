@@ -12,6 +12,7 @@ import AboutSection from "@/components/AboutSection";
 import FeaturedVideoSection from "@/components/FeaturedVideoSection";
 import PhilosophySection from "@/components/PhilosophySection";
 import ServicesSection from "@/components/ServicesSection";
+import logoAsset from "@/assets/short-it-logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -133,7 +134,11 @@ function Index() {
         <header className="relative z-20 px-6 py-6">
           <nav className="liquid-glass rounded-full max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
             <div className="flex items-center">
-              <Globe size={24} className="text-white" />
+              <img
+                src={logoAsset.url}
+                alt="Short It logo"
+                className="h-8 w-8 rounded-full object-cover"
+              />
               <div className="ml-2 flex flex-col leading-tight">
                 <span className="text-white font-semibold text-lg">
                   Short It
