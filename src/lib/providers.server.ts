@@ -245,10 +245,8 @@ export async function persistStatus(
   if (error) console.error(`[provider:${provider.id}] could not persist status`, error);
 }
 
-export async function assertAdmin(
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> },
-  userId: string,
-): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function assertAdmin(supabase: any, userId: string): Promise<void> {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (data !== true) throw new Error("Forbidden: admin access required.");
 }
