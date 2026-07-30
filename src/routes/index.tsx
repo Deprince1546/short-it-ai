@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   ChevronDown,
@@ -160,10 +160,20 @@ function Index() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <button className="text-white text-sm font-medium">Sign Up</button>
-              <button className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium">
+              <Link
+                to="/auth"
+                search={{ redirect: "/studio" }}
+                className="text-white text-sm font-medium"
+              >
+                Sign Up
+              </Link>
+              <Link
+                to="/auth"
+                search={{ redirect: "/studio" }}
+                className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium"
+              >
                 Login
-              </button>
+              </Link>
             </div>
           </nav>
         </header>
