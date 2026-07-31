@@ -27,15 +27,11 @@ export default function PhilosophySection() {
             transition={{ duration: 0.8 }}
             className="rounded-3xl overflow-hidden aspect-[4/3]"
           >
-            <video
+            <LazyVideo
               className="w-full h-full object-cover"
-              muted
-              autoPlay
-              loop
-              playsInline
-              preload="auto"
               src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260307_083826_e938b29f-a43a-41ec-a153-3d4730578ab8.mp4"
             />
+
           </motion.div>
 
           <motion.div
