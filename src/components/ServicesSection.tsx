@@ -1,6 +1,9 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
+import LazyVideo from "@/components/LazyVideo";
+import SocialLinks from "@/components/SocialLinks";
+
 
 const serif = { fontFamily: "'Instrument Serif', serif" };
 
