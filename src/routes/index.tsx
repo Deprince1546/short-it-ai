@@ -294,6 +294,3 @@ function Index() {
     </main>
   );
 }
-
-  );
-}
