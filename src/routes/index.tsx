@@ -30,7 +30,7 @@ export const Route = createFileRoute("/")({
     ],
     links: [
       { rel: "preconnect", href: "https://d8j0ntlcm91z4.cloudfront.net", crossOrigin: "anonymous" },
-      { rel: "preload", as: "video", href: HERO_VIDEO, fetchpriority: "high" },
+      { rel: "preload", as: "video", href: HERO_VIDEO, fetchPriority: "high" },
     ],
   }),
   component: Index,
