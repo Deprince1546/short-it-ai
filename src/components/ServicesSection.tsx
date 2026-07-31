@@ -101,7 +101,15 @@ export default function ServicesSection() {
             </motion.div>
           ))}
         </div>
+
+        <footer className="mt-20 md:mt-28 flex flex-col items-center gap-4">
+          <SocialLinks />
+          <p className="text-white/30 text-xs">
+            © {new Date().getFullYear()} Short It. Turn ideas into viral short-form videos.
+          </p>
+        </footer>
       </div>
     </section>
   );
 }
+
