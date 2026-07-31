@@ -72,17 +72,13 @@ export default function ServicesSection() {
               className="group liquid-glass rounded-3xl overflow-hidden"
             >
               <div className="relative aspect-video overflow-hidden">
-                <video
+                <LazyVideo
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  muted
-                  autoPlay
-                  loop
-                  playsInline
-                  preload="auto"
                   src={card.video}
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
+
               <div className="p-6 md:p-8">
                 <div className="flex items-center justify-between mb-4">
                   <span className="uppercase tracking-widest text-white/40 text-xs">
