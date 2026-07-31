@@ -1,18 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  ChevronDown,
-  Globe,
-  Instagram,
-  Twitter,
-  Upload,
-} from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight, ChevronDown, Upload } from "lucide-react";
 import AboutSection from "@/components/AboutSection";
 import FeaturedVideoSection from "@/components/FeaturedVideoSection";
 import PhilosophySection from "@/components/PhilosophySection";
 import ServicesSection from "@/components/ServicesSection";
-import logoAsset from "@/assets/short-it-logo.png.asset.json";
+import logoUrl from "@/assets/short-it-logo.png";
+
+const HERO_VIDEO =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_074625_a81f018a-956b-43fb-9aee-4d1508e30e6a.mp4";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,6 +28,10 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [
+      { rel: "preconnect", href: "https://d8j0ntlcm91z4.cloudfront.net", crossOrigin: "anonymous" },
+      { rel: "preload", as: "video", href: HERO_VIDEO, fetchpriority: "high" },
+    ],
   }),
   component: Index,
 });
@@ -46,6 +46,13 @@ const PLATFORMS = [
   "X Video",
   "LinkedIn Video",
 ];
+
+const NAV = [
+  { label: "Features", href: "#services" },
+  { label: "How it Works", href: "#approach" },
+  { label: "About", href: "#about" },
+];
+
 
 
 function useHeroVideoFade() {
