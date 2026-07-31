@@ -40,6 +40,7 @@ export default function ServicesSection() {
 
   return (
     <section
+      id="services"
       ref={ref}
       className="relative bg-black py-28 md:py-40 px-6 overflow-hidden"
     >

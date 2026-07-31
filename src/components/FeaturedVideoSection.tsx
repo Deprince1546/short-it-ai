@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import LazyVideo from "@/components/LazyVideo";
 
 export default function FeaturedVideoSection() {
   const ref = useRef<HTMLDivElement>(null);
@@ -7,6 +8,7 @@ export default function FeaturedVideoSection() {
 
   return (
     <section
+      id="approach"
       ref={ref}
       className="bg-black pt-6 md:pt-10 pb-20 md:pb-32 px-6 overflow-hidden"
     >
@@ -17,13 +19,8 @@ export default function FeaturedVideoSection() {
           transition={{ duration: 0.9 }}
           className="relative rounded-3xl overflow-hidden aspect-video"
         >
-          <video
+          <LazyVideo
             className="w-full h-full object-cover"
-            muted
-            autoPlay
-            loop
-            playsInline
-            preload="auto"
             src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260402_054547_9875cfc5-155a-4229-8ec8-b7ba7125cbf8.mp4"
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -44,6 +41,7 @@ export default function FeaturedVideoSection() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
                 className="liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium self-start md:self-auto"
               >
                 Learn More
