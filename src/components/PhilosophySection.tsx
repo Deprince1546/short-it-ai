@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import LazyVideo from "@/components/LazyVideo";
 
 const serif = { fontFamily: "'Instrument Serif', serif" };
 
@@ -8,7 +9,7 @@ export default function PhilosophySection() {
   const inView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section ref={ref} className="bg-black py-28 md:py-40 px-6 overflow-hidden">
+    <section id="philosophy" ref={ref} className="bg-black py-28 md:py-40 px-6 overflow-hidden">
       <div className="mx-auto max-w-6xl">
         <motion.h2
           initial={{ opacity: 0, y: 40 }}
@@ -27,15 +28,11 @@ export default function PhilosophySection() {
             transition={{ duration: 0.8 }}
             className="rounded-3xl overflow-hidden aspect-[4/3]"
           >
-            <video
+            <LazyVideo
               className="w-full h-full object-cover"
-              muted
-              autoPlay
-              loop
-              playsInline
-              preload="auto"
               src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260307_083826_e938b29f-a43a-41ec-a153-3d4730578ab8.mp4"
             />
+
           </motion.div>
 
           <motion.div

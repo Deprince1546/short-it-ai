@@ -1,6 +1,9 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
+import LazyVideo from "@/components/LazyVideo";
+import SocialLinks from "@/components/SocialLinks";
+
 
 const serif = { fontFamily: "'Instrument Serif', serif" };
 
@@ -37,6 +40,7 @@ export default function ServicesSection() {
 
   return (
     <section
+      id="services"
       ref={ref}
       className="relative bg-black py-28 md:py-40 px-6 overflow-hidden"
     >
@@ -69,17 +73,13 @@ export default function ServicesSection() {
               className="group liquid-glass rounded-3xl overflow-hidden"
             >
               <div className="relative aspect-video overflow-hidden">
-                <video
+                <LazyVideo
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  muted
-                  autoPlay
-                  loop
-                  playsInline
-                  preload="auto"
                   src={card.video}
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
               </div>
+
               <div className="p-6 md:p-8">
                 <div className="flex items-center justify-between mb-4">
                   <span className="uppercase tracking-widest text-white/40 text-xs">
@@ -102,7 +102,15 @@ export default function ServicesSection() {
             </motion.div>
           ))}
         </div>
+
+        <footer className="mt-20 md:mt-28 flex flex-col items-center gap-4">
+          <SocialLinks />
+          <p className="text-white/30 text-xs">
+            © {new Date().getFullYear()} Short It. Turn ideas into viral short-form videos.
+          </p>
+        </footer>
       </div>
     </section>
   );
 }
+
