@@ -264,18 +264,25 @@ function Studio() {
             ) : null}
             {active.error && <p className="mt-3 text-red-400 text-xs">{active.error}</p>}
 
+            <button
+              onClick={() => void downloadBundle(active.id)}
+              disabled={exporting}
+              className="mt-5 liquid-glass rounded-full px-6 py-3 text-white text-sm font-medium disabled:opacity-50"
+            >
+              {exporting ? "Preparing…" : "Download bundle (.zip)"}
+            </button>
+
             {events?.length ? (
               <div className="mt-5 border-t border-white/10 pt-4 space-y-1">
                 {events.map((event) => (
                   <p key={event.id} className="text-white/40 text-xs font-mono">
-                    {event.step}
-                    {event.provider ? ` · ${event.provider}` : ""} · {event.level}
+                    {event.step} · {event.level}
                     {event.duration_ms ? ` · ${event.duration_ms}ms` : ""}
-                    {event.message ? ` — ${event.message}` : ""}
                   </p>
                 ))}
               </div>
             ) : null}
+
           </section>
         )}
 
