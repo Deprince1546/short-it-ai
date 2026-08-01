@@ -1,31 +1,43 @@
-# Liquid Vision Studio
+# Short It – AI Vibe Video Creation Platform
 
-Build a single-page landing site using React + TypeScript + Vite + Tailwind CSS + framer-motion + lucide-react. The entire page has a bg-black background. The font loaded via Google Fonts is Instrument Serif (italic and regular). Import it in index.css:
+Short It is an AI-powered short-form video platform that creates hyper-personalized videos for TikTok, Instagram Reels, and YouTube Shorts.
 
+Unlike generic AI video tools, Short It uses your own assets, voice cloning, vibe filters, and Coasty computer-use agents for final polishing, trend research, and automated posting.
 
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
-LIQUID GLASS CSS (in index.css, inside @layer components)
-Create a reusable .liquid-glass class used on every glass element:
+## Features
 
+- Brand Soul Engine – Uses your own Instagram / Drive assets instead of generic stock
+- Aesthetic Style Tuner (Y2K, Lofi, Neo-Noir, etc.)
+- AI Voice Cloning (10-second sample via ElevenLabs)
+- Chat-to-Edit timeline
+- Smart Hook Tester & Trend Research (powered by Coasty)
+- Automated posting to YouTube, Instagram & TikTok via Coasty
+- Multi-platform optimized captions, titles & hashtags
 
-.liquid-glass {
-  background: rgba(255, 255, 255, 0.01);
-  background-blend-mode: luminosity;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border: none;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  position: relative;
-  overflow: hidden;
-}
+## Tech Stack
 
-.liquid-glass::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.4px;
-  background: linear-gradient(
+- Built with Lovable
+- OpenRouter / Groq (LLM)
+- Runway (video generation)
+- ElevenLabs (voice)
+- Stability / Pollinations (images)
+- Coasty AI (computer-use agent for editing, research & posting)
+
+## Demo
+
+https://videotourl.com/videos/1785626925447-627d958d-ceb9-47e3-abf3-92233eaf0d13.mp4
+
+Example:  
+Watch the full demo → https://videotourl.com/videos/1785626925447-627d958d-ceb9-47e3-abf3-92233eaf0d13.mp4
+
+Live app → shortitai.vercel.app
+
+## Setup Instructions
+
+1. Clone the repository
+```bash
+git clone https://github.com/your-username/short-it.git
+cd short-it  background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.45) 0%,
     rgba(255, 255, 255, 0.15) 20%,
