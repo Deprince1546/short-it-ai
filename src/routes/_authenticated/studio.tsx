@@ -47,6 +47,32 @@ function Studio() {
   const [scriptText, setScriptText] = useState("");
   const [scriptName, setScriptName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const downloadBundle = async (id: string) => {
+    setExporting(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Session expired — sign in again.");
+      const response = await fetch(`/api/export/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Export failed.");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "short-it-export.zip";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
 
   const create = useServerFn(createGeneration);
   const process = useServerFn(processGeneration);
