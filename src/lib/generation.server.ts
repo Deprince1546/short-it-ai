@@ -2,7 +2,7 @@
 // OpenRouter (fallback Groq) -> Pollinations/Stability -> ElevenLabs -> Runway -> Coasty
 // Every step writes an audit row to generation_events. API keys never leave this module.
 
-import { fetchWithTimeout, withRetry } from "./providers.server";
+import { coastyBase, envKey, fetchWithTimeout, withRetry } from "./providers.server";
 
 export type Storyboard = {
   title: string;
@@ -84,10 +84,11 @@ async function step<T>(
 }
 
 function requireKey(name: string): string {
-  const value = process.env[name];
+  const value = envKey(name);
   if (!value) throw new Error(`${name} is not configured. Add it in API Configuration.`);
   return value;
 }
+
 
 async function ok(response: Response, provider: string): Promise<Response> {
   if (response.ok) return response;
@@ -189,7 +190,7 @@ export async function buildStoryboard(
 // ---------------------------------------------------------------- 2. Images
 
 async function pollinationsImage(prompt: string): Promise<ArrayBuffer> {
-  const key = process.env.POLLINATIONS_API_KEY;
+  const key = envKey("POLLINATIONS_API_KEY");
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=720&height=1280&nologo=true&model=flux`;
   const response = await ok(
     await fetchWithTimeout(
@@ -271,7 +272,7 @@ export async function generateVoiceover(
   ctx: { id: string; userId: string },
   storyboard: Storyboard,
 ): Promise<string | null> {
-  const key = process.env.ELEVENLABS_API_KEY;
+  const key = envKey("ELEVENLABS_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "voiceover", {
       provider: "elevenlabs",
@@ -324,7 +325,7 @@ export async function generateVideo(
   storyboard: Storyboard,
   imageUrl: string,
 ): Promise<string | null> {
-  const key = process.env.RUNWAY_API_KEY;
+  const key = envKey("RUNWAY_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "video", {
       provider: "runway",
@@ -406,36 +407,63 @@ export async function coastyReview(
   ctx: { id: string; userId: string },
   storyboard: Storyboard,
 ): Promise<void> {
-  const key = process.env.COASTY_API_KEY;
-  const baseUrl = process.env.COASTY_BASE_URL;
-  if (!key || !baseUrl) {
+  const key = envKey("COASTY_API_KEY");
+  if (!key) {
     await logEvent(ctx.id, ctx.userId, "review", {
       provider: "coasty",
       level: "warn",
-      message: "Coasty base URL not configured — quality review and auto-publish skipped.",
+      message: "Coasty key missing — quality review and auto-publish skipped.",
     });
     return;
   }
+  const headers = { "X-API-Key": key, "content-type": "application/json" };
+
   try {
+    // Cheap reachability + entitlement probe before spending agent steps.
     await step(ctx, "review", "coasty", async () => {
       await ok(
+        await fetchWithTimeout(`${coastyBase()}/v1/models`, { headers }, 20_000),
+        "Coasty",
+      );
+      return true;
+    });
+
+    // Autonomous QA / trend research pass. Off by default because each run
+    // provisions a machine and consumes Coasty credits.
+    if (process.env.COASTY_AUTOPILOT !== "true") {
+      await logEvent(ctx.id, ctx.userId, "review", {
+        provider: "coasty",
+        message: "Coasty connected. Autonomous QA disabled (COASTY_AUTOPILOT is off).",
+      });
+      return;
+    }
+
+    await step(ctx, "review-task", "coasty", async () => {
+      const response = await ok(
         await fetchWithTimeout(
-          `${baseUrl.replace(/\/$/, "")}/v1/tasks`,
+          `${coastyBase()}/v1/tasks`,
           {
             method: "POST",
-            headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
-            body: JSON.stringify({ type: "quality_review", title: storyboard.title }),
+            headers,
+            body: JSON.stringify({
+              task: `Research current short-form trends for "${storyboard.title}". Verify the caption and hashtags read naturally, then summarise concrete improvements. Caption: ${storyboard.caption}. Hashtags: ${storyboard.hashtags.join(" ")}.`,
+              max_steps: 25,
+              deadline_seconds: 600,
+              metadata: { generation_id: ctx.id },
+            }),
           },
           60_000,
         ),
         "Coasty",
       );
-      return true;
+      const json = (await response.json().catch(() => ({}))) as { id?: string; run_id?: string };
+      return json.run_id ?? json.id ?? "queued";
     });
   } catch {
     /* already audited; non-fatal */
   }
 }
+
 
 // ---------------------------------------------------------------- orchestrator
 

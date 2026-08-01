@@ -47,6 +47,32 @@ function Studio() {
   const [scriptText, setScriptText] = useState("");
   const [scriptName, setScriptName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const downloadBundle = async (id: string) => {
+    setExporting(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Session expired — sign in again.");
+      const response = await fetch(`/api/export/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Export failed.");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "short-it-export.zip";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
 
   const create = useServerFn(createGeneration);
   const process = useServerFn(processGeneration);
@@ -264,18 +290,25 @@ function Studio() {
             ) : null}
             {active.error && <p className="mt-3 text-red-400 text-xs">{active.error}</p>}
 
+            <button
+              onClick={() => void downloadBundle(active.id)}
+              disabled={exporting}
+              className="mt-5 liquid-glass rounded-full px-6 py-3 text-white text-sm font-medium disabled:opacity-50"
+            >
+              {exporting ? "Preparing…" : "Download bundle (.zip)"}
+            </button>
+
             {events?.length ? (
               <div className="mt-5 border-t border-white/10 pt-4 space-y-1">
                 {events.map((event) => (
                   <p key={event.id} className="text-white/40 text-xs font-mono">
-                    {event.step}
-                    {event.provider ? ` · ${event.provider}` : ""} · {event.level}
+                    {event.step} · {event.level}
                     {event.duration_ms ? ` · ${event.duration_ms}ms` : ""}
-                    {event.message ? ` — ${event.message}` : ""}
                   </p>
                 ))}
               </div>
             ) : null}
+
           </section>
         )}
 

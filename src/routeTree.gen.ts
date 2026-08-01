@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
+import { Route as ApiExportIdRouteImport } from './routes/api/export.$id'
 import { Route as AuthenticatedSettingsApiRouteImport } from './routes/_authenticated/settings.api'
 
 const AuthRoute = AuthRouteImport.update({
@@ -34,6 +35,11 @@ const AuthenticatedStudioRoute = AuthenticatedStudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiExportIdRoute = ApiExportIdRouteImport.update({
+  id: '/api/export/$id',
+  path: '/api/export/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedSettingsApiRoute =
   AuthenticatedSettingsApiRouteImport.update({
     id: '/settings/api',
@@ -46,12 +52,14 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/studio': typeof AuthenticatedStudioRoute
   '/settings/api': typeof AuthenticatedSettingsApiRoute
+  '/api/export/$id': typeof ApiExportIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/studio': typeof AuthenticatedStudioRoute
   '/settings/api': typeof AuthenticatedSettingsApiRoute
+  '/api/export/$id': typeof ApiExportIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -60,12 +68,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/studio': typeof AuthenticatedStudioRoute
   '/_authenticated/settings/api': typeof AuthenticatedSettingsApiRoute
+  '/api/export/$id': typeof ApiExportIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/studio' | '/settings/api'
+  fullPaths: '/' | '/auth' | '/studio' | '/settings/api' | '/api/export/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/studio' | '/settings/api'
+  to: '/' | '/auth' | '/studio' | '/settings/api' | '/api/export/$id'
   id:
     | '__root__'
     | '/'
@@ -73,12 +82,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/studio'
     | '/_authenticated/settings/api'
+    | '/api/export/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiExportIdRoute: typeof ApiExportIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -111,6 +122,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/export/$id': {
+      id: '/api/export/$id'
+      path: '/api/export/$id'
+      fullPath: '/api/export/$id'
+      preLoaderRoute: typeof ApiExportIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/settings/api': {
       id: '/_authenticated/settings/api'
       path: '/settings/api'
@@ -138,6 +156,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiExportIdRoute: ApiExportIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -22,6 +22,19 @@ export type ProviderDefinition = {
 
 const TIMEOUT_MS = 12_000;
 
+/**
+ * Keys pasted through chat/forms often carry invisible unicode (LRM/RTL marks,
+ * zero-width spaces, NBSP) or stray whitespace. Providers reject those verbatim,
+ * so every key read goes through this.
+ */
+export function sanitizeKey(value: string | undefined | null): string {
+  return (value ?? "").replace(/[\s\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, "");
+}
+
+export function envKey(name: string): string {
+  return sanitizeKey(process.env[name]);
+}
+
 export async function fetchWithTimeout(
   url: string,
   init: RequestInit = {},
@@ -29,12 +42,16 @@ export async function fetchWithTimeout(
 ): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const headers = new Headers(init.headers);
+  // Some provider edge/WAF layers reject requests without a User-Agent.
+  if (!headers.has("User-Agent")) headers.set("User-Agent", "ShortIt/1.0 (+https://shortit.app)");
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await fetch(url, { ...init, headers, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }
 }
+
 
 /** Retry transient failures (429 / 5xx / network) with exponential backoff. */
 export async function withRetry<T>(
@@ -105,12 +122,13 @@ export const PROVIDERS: ProviderDefinition[] = [
     purpose: "AI voice narration and multi-language voiceover.",
     healthCheck: async (apiKey) =>
       classify(
-        await fetchWithTimeout("https://api.elevenlabs.io/v1/user", {
+        await fetchWithTimeout("https://api.elevenlabs.io/v1/models", {
           headers: { "xi-api-key": apiKey },
         }),
         "Key accepted by ElevenLabs.",
       ),
   },
+
   {
     id: "pollinations",
     label: "Pollinations",
@@ -185,22 +203,19 @@ export const PROVIDERS: ProviderDefinition[] = [
     envVar: "COASTY_API_KEY",
     purpose:
       "Desktop/browser automation: thumbnails, trend research, quality review and publishing to social accounts.",
-    healthCheck: async (apiKey) => {
-      const baseUrl = process.env.COASTY_BASE_URL;
-      if (!baseUrl) {
-        return {
-          status: "unknown",
-          detail:
-            "Key stored. Set COASTY_BASE_URL to the Coasty API base URL to enable automatic validation.",
-        };
-      }
-      return classify(
-        await fetchWithTimeout(`${baseUrl.replace(/\/$/, "")}/v1/me`, { headers: bearer(apiKey) }),
+    healthCheck: async (apiKey) =>
+      classify(
+        await fetchWithTimeout(`${coastyBase()}/v1/models`, {
+          headers: { "X-API-Key": apiKey },
+        }),
         "Key accepted by Coasty.",
-      );
-    },
+      ),
   },
 ];
+
+export function coastyBase(): string {
+  return (process.env.COASTY_BASE_URL || "https://coasty.ai").replace(/\/$/, "");
+}
 
 export function getProvider(id: string): ProviderDefinition | undefined {
   return PROVIDERS.find((provider) => provider.id === id);
@@ -209,13 +224,14 @@ export function getProvider(id: string): ProviderDefinition | undefined {
 export async function runHealthCheck(
   provider: ProviderDefinition,
 ): Promise<ProviderCheckResult> {
-  const apiKey = process.env[provider.envVar];
+  const apiKey = envKey(provider.envVar);
   if (!apiKey) {
     return { status: "missing", detail: `${provider.envVar} is not configured.` };
   }
   try {
     return await withRetry(() => provider.healthCheck(apiKey), { attempts: 2 });
   } catch (error) {
+
     console.error(`[provider:${provider.id}] health check failed`, error);
     return {
       status: "unknown",

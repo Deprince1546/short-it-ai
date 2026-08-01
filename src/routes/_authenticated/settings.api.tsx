@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listProviders, testAllProviders, testProvider } from "@/lib/providers.functions";
+import { getDiagnostics } from "@/lib/diagnostics.functions";
 import { toast } from "sonner";
 import { CheckCircle2, CircleAlert, CircleHelp, Loader2, RefreshCw } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/settings/api")({
   head: () => ({
@@ -35,12 +38,22 @@ function ApiSettings() {
   const fetchProviders = useServerFn(listProviders);
   const runTest = useServerFn(testProvider);
   const runAll = useServerFn(testAllProviders);
+  const fetchDiagnostics = useServerFn(getDiagnostics);
+  const [onlyFailures, setOnlyFailures] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["providers"],
     queryFn: () => fetchProviders(),
     retry: false,
   });
+
+  const diagnostics = useQuery({
+    queryKey: ["diagnostics", onlyFailures],
+    queryFn: () => fetchDiagnostics({ data: { onlyFailures, limit: 200 } }),
+    retry: false,
+    refetchInterval: 15_000,
+  });
+
 
   const single = useMutation({
     mutationFn: (id: string) => runTest({ data: { id } }),
@@ -149,7 +162,74 @@ function ApiSettings() {
             );
           })}
         </div>
+
+        <section className="mt-14">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2
+                className="text-3xl md:text-4xl text-white tracking-tight"
+                style={{ fontFamily: "'Instrument Serif', serif" }}
+              >
+                Diagnostics
+              </h2>
+              <p className="mt-2 text-white/50 text-sm max-w-xl">
+                Request and response summaries with timing for every provider call. Credentials are
+                never recorded — only step, provider, outcome and duration.
+              </p>
+            </div>
+            <button
+              onClick={() => setOnlyFailures((value) => !value)}
+              className="liquid-glass rounded-full px-5 py-2 text-white text-xs font-medium"
+            >
+              {onlyFailures ? "Showing problems only" : "Showing all calls"}
+            </button>
+          </div>
+
+          {diagnostics.isLoading && <p className="mt-6 text-white/40 text-sm">Loading telemetry…</p>}
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {diagnostics.data?.summary.map((row) => (
+              <div key={row.provider} className="liquid-glass rounded-2xl p-4">
+                <p className="text-white text-sm capitalize">{row.provider}</p>
+                <p className="mt-2 text-white/50 text-xs">
+                  {row.calls} calls · {row.failures} failed · {row.warnings} warned
+                </p>
+                <p className="mt-1 text-white/40 text-xs">
+                  avg {row.avgMs ?? "—"}ms · slowest {row.slowestMs ?? "—"}ms
+                </p>
+                {row.lastError && (
+                  <p className="mt-2 text-red-400/80 text-xs line-clamp-3">{row.lastError}</p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 liquid-glass rounded-2xl p-4 max-h-[28rem] overflow-auto space-y-1">
+            {diagnostics.data?.events.length === 0 && (
+              <p className="text-white/40 text-sm">No provider calls recorded yet.</p>
+            )}
+            {diagnostics.data?.events.map((event) => (
+              <p
+                key={event.id}
+                className={`text-xs font-mono ${
+                  event.level === "error"
+                    ? "text-red-400"
+                    : event.level === "warn"
+                      ? "text-amber-400"
+                      : "text-white/45"
+                }`}
+              >
+                {new Date(event.createdAt).toLocaleTimeString()} · {event.provider ?? "pipeline"} ·{" "}
+                {event.step}
+                {event.durationMs ? ` · ${event.durationMs}ms` : ""}
+                {event.message ? ` — ${event.message}` : ""}
+                {event.generationTitle ? `  [${event.generationTitle.slice(0, 40)}]` : ""}
+              </p>
+            ))}
+          </div>
+        </section>
       </div>
+
     </main>
   );
 }
