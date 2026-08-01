@@ -190,7 +190,7 @@ export async function buildStoryboard(
 // ---------------------------------------------------------------- 2. Images
 
 async function pollinationsImage(prompt: string): Promise<ArrayBuffer> {
-  const key = process.env.POLLINATIONS_API_KEY;
+  const key = envKey("POLLINATIONS_API_KEY");
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=720&height=1280&nologo=true&model=flux`;
   const response = await ok(
     await fetchWithTimeout(
@@ -272,7 +272,7 @@ export async function generateVoiceover(
   ctx: { id: string; userId: string },
   storyboard: Storyboard,
 ): Promise<string | null> {
-  const key = process.env.ELEVENLABS_API_KEY;
+  const key = envKey("ELEVENLABS_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "voiceover", {
       provider: "elevenlabs",
@@ -325,7 +325,7 @@ export async function generateVideo(
   storyboard: Storyboard,
   imageUrl: string,
 ): Promise<string | null> {
-  const key = process.env.RUNWAY_API_KEY;
+  const key = envKey("RUNWAY_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "video", {
       provider: "runway",
