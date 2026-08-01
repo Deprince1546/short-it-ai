@@ -22,6 +22,19 @@ export type ProviderDefinition = {
 
 const TIMEOUT_MS = 12_000;
 
+/**
+ * Keys pasted through chat/forms often carry invisible unicode (LRM/RTL marks,
+ * zero-width spaces, NBSP) or stray whitespace. Providers reject those verbatim,
+ * so every key read goes through this.
+ */
+export function sanitizeKey(value: string | undefined | null): string {
+  return (value ?? "").replace(/[\s\u200b-\u200f\u202a-\u202e\u2060\ufeff]/g, "");
+}
+
+export function envKey(name: string): string {
+  return sanitizeKey(process.env[name]);
+}
+
 export async function fetchWithTimeout(
   url: string,
   init: RequestInit = {},
@@ -29,12 +42,16 @@ export async function fetchWithTimeout(
 ): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const headers = new Headers(init.headers);
+  // Some provider edge/WAF layers reject requests without a User-Agent.
+  if (!headers.has("User-Agent")) headers.set("User-Agent", "ShortIt/1.0 (+https://shortit.app)");
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await fetch(url, { ...init, headers, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }
 }
+
 
 /** Retry transient failures (429 / 5xx / network) with exponential backoff. */
 export async function withRetry<T>(
