@@ -38,12 +38,22 @@ function ApiSettings() {
   const fetchProviders = useServerFn(listProviders);
   const runTest = useServerFn(testProvider);
   const runAll = useServerFn(testAllProviders);
+  const fetchDiagnostics = useServerFn(getDiagnostics);
+  const [onlyFailures, setOnlyFailures] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["providers"],
     queryFn: () => fetchProviders(),
     retry: false,
   });
+
+  const diagnostics = useQuery({
+    queryKey: ["diagnostics", onlyFailures],
+    queryFn: () => fetchDiagnostics({ data: { onlyFailures, limit: 200 } }),
+    retry: false,
+    refetchInterval: 15_000,
+  });
+
 
   const single = useMutation({
     mutationFn: (id: string) => runTest({ data: { id } }),
