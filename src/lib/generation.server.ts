@@ -84,10 +84,11 @@ async function step<T>(
 }
 
 function requireKey(name: string): string {
-  const value = process.env[name];
+  const value = envKey(name);
   if (!value) throw new Error(`${name} is not configured. Add it in API Configuration.`);
   return value;
 }
+
 
 async function ok(response: Response, provider: string): Promise<Response> {
   if (response.ok) return response;
