@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listProviders, testAllProviders, testProvider } from "@/lib/providers.functions";
+import { getDiagnostics } from "@/lib/diagnostics.functions";
 import { toast } from "sonner";
 import { CheckCircle2, CircleAlert, CircleHelp, Loader2, RefreshCw } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/settings/api")({
   head: () => ({
