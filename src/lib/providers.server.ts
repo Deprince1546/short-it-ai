@@ -122,12 +122,13 @@ export const PROVIDERS: ProviderDefinition[] = [
     purpose: "AI voice narration and multi-language voiceover.",
     healthCheck: async (apiKey) =>
       classify(
-        await fetchWithTimeout("https://api.elevenlabs.io/v1/user", {
+        await fetchWithTimeout("https://api.elevenlabs.io/v1/models", {
           headers: { "xi-api-key": apiKey },
         }),
         "Key accepted by ElevenLabs.",
       ),
   },
+
   {
     id: "pollinations",
     label: "Pollinations",
