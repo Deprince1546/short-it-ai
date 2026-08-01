@@ -203,22 +203,19 @@ export const PROVIDERS: ProviderDefinition[] = [
     envVar: "COASTY_API_KEY",
     purpose:
       "Desktop/browser automation: thumbnails, trend research, quality review and publishing to social accounts.",
-    healthCheck: async (apiKey) => {
-      const baseUrl = process.env.COASTY_BASE_URL;
-      if (!baseUrl) {
-        return {
-          status: "unknown",
-          detail:
-            "Key stored. Set COASTY_BASE_URL to the Coasty API base URL to enable automatic validation.",
-        };
-      }
-      return classify(
-        await fetchWithTimeout(`${baseUrl.replace(/\/$/, "")}/v1/me`, { headers: bearer(apiKey) }),
+    healthCheck: async (apiKey) =>
+      classify(
+        await fetchWithTimeout(`${coastyBase()}/v1/models`, {
+          headers: { "X-API-Key": apiKey },
+        }),
         "Key accepted by Coasty.",
-      );
-    },
+      ),
   },
 ];
+
+export function coastyBase(): string {
+  return (process.env.COASTY_BASE_URL || "https://coasty.ai").replace(/\/$/, "");
+}
 
 export function getProvider(id: string): ProviderDefinition | undefined {
   return PROVIDERS.find((provider) => provider.id === id);
@@ -227,12 +224,13 @@ export function getProvider(id: string): ProviderDefinition | undefined {
 export async function runHealthCheck(
   provider: ProviderDefinition,
 ): Promise<ProviderCheckResult> {
-  const apiKey = process.env[provider.envVar];
+  const apiKey = envKey(provider.envVar);
   if (!apiKey) {
     return { status: "missing", detail: `${provider.envVar} is not configured.` };
   }
   try {
     return await withRetry(() => provider.healthCheck(apiKey), { attempts: 2 });
+
   } catch (error) {
     console.error(`[provider:${provider.id}] health check failed`, error);
     return {
