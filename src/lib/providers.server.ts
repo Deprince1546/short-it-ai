@@ -230,8 +230,8 @@ export async function runHealthCheck(
   }
   try {
     return await withRetry(() => provider.healthCheck(apiKey), { attempts: 2 });
-
   } catch (error) {
+
     console.error(`[provider:${provider.id}] health check failed`, error);
     return {
       status: "unknown",
