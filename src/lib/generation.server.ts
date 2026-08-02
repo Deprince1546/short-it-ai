@@ -196,7 +196,7 @@ async function chat(
 }
 
 export async function buildStoryboard(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   input: { prompt: string; platform: string | null; scriptText: string | null },
 ): Promise<Storyboard> {
   const userPrompt = [
@@ -271,7 +271,7 @@ async function stabilityImage(prompt: string): Promise<ArrayBuffer> {
 }
 
 export async function generateSceneImages(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
 ): Promise<string[]> {
   const db = await admin();
@@ -315,7 +315,7 @@ export async function signedUrl(path: string, expiresIn = 60 * 60 * 24 * 7): Pro
 const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM";
 
 export async function generateVoiceover(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
 ): Promise<string | null> {
   const key = envKey("ELEVENLABS_API_KEY");
@@ -367,7 +367,7 @@ export async function generateVoiceover(
 const RUNWAY_VERSION = "2024-11-06";
 
 export async function generateVideo(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
   imageUrl: string,
 ): Promise<string | null> {
@@ -450,7 +450,7 @@ export async function generateVideo(
 // ---------------------------------------------------------------- 5. Coasty QA
 
 export async function coastyReview(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
 ): Promise<void> {
   const key = envKey("COASTY_API_KEY");
@@ -575,7 +575,7 @@ export async function runPipeline(generationId: string, userId: string): Promise
 }
 
 async function generateSceneImagesSafe(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
 ): Promise<string[]> {
   try {
