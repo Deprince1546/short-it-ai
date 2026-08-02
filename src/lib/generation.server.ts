@@ -576,11 +576,14 @@ export async function runPipeline(generationId: string, userId: string): Promise
       progress: 100,
       error: null,
     });
-    await logEvent(generationId, userId, "complete", { message: "Pipeline finished." });
+    await logEvent(generationId, userId, "complete", {
+      message: "Pipeline finished.",
+      correlationId,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Generation failed.";
     await setProgress(generationId, { status: "failed", error: message });
-    await logEvent(generationId, userId, "failed", { level: "error", message });
+    await logEvent(generationId, userId, "failed", { level: "error", message, correlationId });
     throw error;
   }
 }
@@ -594,8 +597,10 @@ async function generateSceneImagesSafe(
   } catch (error) {
     await logEvent(ctx.id, ctx.userId, "visuals", {
       level: "warn",
+      correlationId: ctx.correlationId,
       message: error instanceof Error ? error.message : "Image generation unavailable.",
     });
     return [];
   }
+
 }
