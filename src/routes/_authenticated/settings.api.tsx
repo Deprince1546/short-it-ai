@@ -40,6 +40,7 @@ function ApiSettings() {
   const runAll = useServerFn(testAllProviders);
   const fetchDiagnostics = useServerFn(getDiagnostics);
   const [onlyFailures, setOnlyFailures] = useState(false);
+  const [trace, setTrace] = useState("");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["providers"],
@@ -48,11 +49,12 @@ function ApiSettings() {
   });
 
   const diagnostics = useQuery({
-    queryKey: ["diagnostics", onlyFailures],
-    queryFn: () => fetchDiagnostics({ data: { onlyFailures, limit: 200 } }),
+    queryKey: ["diagnostics", onlyFailures, trace],
+    queryFn: () => fetchDiagnostics({ data: { onlyFailures, limit: 200, correlationId: trace } }),
     retry: false,
     refetchInterval: 15_000,
   });
+
 
 
   const single = useMutation({
@@ -173,16 +175,27 @@ function ApiSettings() {
                 Diagnostics
               </h2>
               <p className="mt-2 text-white/50 text-sm max-w-xl">
-                Request and response summaries with timing for every provider call. Credentials are
-                never recorded — only step, provider, outcome and duration.
+                Request and response summaries with timing for every provider call. Each run carries
+                a correlation ID — click one to trace that run's calls and retries end to end.
+                Credentials are never recorded.
               </p>
             </div>
-            <button
-              onClick={() => setOnlyFailures((value) => !value)}
-              className="liquid-glass rounded-full px-5 py-2 text-white text-xs font-medium"
-            >
-              {onlyFailures ? "Showing problems only" : "Showing all calls"}
-            </button>
+            <div className="flex items-center gap-3">
+              {trace && (
+                <button
+                  onClick={() => setTrace("")}
+                  className="rounded-full bg-white px-5 py-2 text-black text-xs font-medium"
+                >
+                  Clear trace {trace}
+                </button>
+              )}
+              <button
+                onClick={() => setOnlyFailures((value) => !value)}
+                className="liquid-glass rounded-full px-5 py-2 text-white text-xs font-medium"
+              >
+                {onlyFailures ? "Showing problems only" : "Showing all calls"}
+              </button>
+            </div>
           </div>
 
           {diagnostics.isLoading && <p className="mt-6 text-white/40 text-sm">Loading telemetry…</p>}
@@ -219,14 +232,27 @@ function ApiSettings() {
                       : "text-white/45"
                 }`}
               >
-                {new Date(event.createdAt).toLocaleTimeString()} · {event.provider ?? "pipeline"} ·{" "}
+                {event.correlationId ? (
+                  <button
+                    onClick={() => setTrace(event.correlationId!)}
+                    className="text-white/70 hover:text-white underline underline-offset-2"
+                    title="Trace this run"
+                  >
+                    {event.correlationId}
+                  </button>
+                ) : (
+                  <span className="text-white/30">no-trace</span>
+                )}{" "}
+                · {new Date(event.createdAt).toLocaleTimeString()} · {event.provider ?? "pipeline"} ·{" "}
                 {event.step}
+                {event.attempt ? ` · try ${event.attempt}` : ""}
                 {event.durationMs ? ` · ${event.durationMs}ms` : ""}
                 {event.message ? ` — ${event.message}` : ""}
                 {event.generationTitle ? `  [${event.generationTitle.slice(0, 40)}]` : ""}
               </p>
             ))}
           </div>
+
         </section>
       </div>
 

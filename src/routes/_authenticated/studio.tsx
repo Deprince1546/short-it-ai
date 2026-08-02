@@ -47,31 +47,32 @@ function Studio() {
   const [scriptText, setScriptText] = useState("");
   const [scriptName, setScriptName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  const downloadBundle = async (id: string) => {
-    setExporting(true);
+  const downloadVideo = async (id: string) => {
+    setDownloading(true);
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error("Session expired — sign in again.");
-      const response = await fetch(`/api/export/${id}`, {
+      const response = await fetch(`/api/video/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error("Export failed.");
+      if (!response.ok) throw new Error("Download failed.");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "short-it-export.zip";
+      link.download = "short-it.mp4";
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Export failed.");
+      toast.error(error instanceof Error ? error.message : "Download failed.");
     } finally {
-      setExporting(false);
+      setDownloading(false);
     }
   };
+
 
 
   const create = useServerFn(createGeneration);
@@ -271,9 +272,11 @@ function Studio() {
             {active.video_url && (
               <video
                 src={active.video_url}
+                poster={active.thumbnail_url ?? undefined}
                 controls
                 playsInline
-                className="mt-5 w-full rounded-2xl"
+                preload="metadata"
+                className="mt-5 w-full rounded-2xl bg-black"
               />
             )}
             {!active.video_url && active.thumbnail_url && (
@@ -290,13 +293,20 @@ function Studio() {
             ) : null}
             {active.error && <p className="mt-3 text-red-400 text-xs">{active.error}</p>}
 
-            <button
-              onClick={() => void downloadBundle(active.id)}
-              disabled={exporting}
-              className="mt-5 liquid-glass rounded-full px-6 py-3 text-white text-sm font-medium disabled:opacity-50"
-            >
-              {exporting ? "Preparing…" : "Download bundle (.zip)"}
-            </button>
+            {active.video_url ? (
+              <button
+                onClick={() => void downloadVideo(active.id)}
+                disabled={downloading}
+                className="mt-5 rounded-full bg-white px-6 py-3 text-black text-sm font-medium disabled:opacity-50"
+              >
+                {downloading ? "Preparing…" : "Download MP4"}
+              </button>
+            ) : (
+              <p className="mt-5 text-white/40 text-xs">
+                The MP4 download appears here once the render finishes.
+              </p>
+            )}
+
 
             {events?.length ? (
               <div className="mt-5 border-t border-white/10 pt-4 space-y-1">

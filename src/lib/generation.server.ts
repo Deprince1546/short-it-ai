@@ -22,12 +22,26 @@ async function admin(): Promise<Admin> {
   return supabaseAdmin;
 }
 
+export type PipelineCtx = { id: string; userId: string; correlationId: string };
+
+/** Short, human-readable trace id shared by every call/retry of one run. */
+export function newCorrelationId(): string {
+  return `run_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 /** Audit log. Stores step/provider/duration/message only — never request keys. */
 export async function logEvent(
   generationId: string,
   userId: string,
   step: string,
-  opts: { provider?: string; level?: Level; message?: string; durationMs?: number } = {},
+  opts: {
+    provider?: string;
+    level?: Level;
+    message?: string;
+    durationMs?: number;
+    correlationId?: string;
+    attempt?: number;
+  } = {},
 ) {
   try {
     const db = await admin();
@@ -39,6 +53,8 @@ export async function logEvent(
       level: opts.level ?? "info",
       message: (opts.message ?? "").slice(0, 1000) || null,
       duration_ms: opts.durationMs ?? null,
+      correlation_id: opts.correlationId ?? null,
+      attempt: opts.attempt ?? null,
     });
   } catch (error) {
     console.error("[generation] audit log failed", error);
@@ -56,19 +72,46 @@ async function setProgress(
     .eq("id", generationId);
 }
 
-/** Runs a provider call with retries + timing, and audits the outcome. */
+/**
+ * Runs a provider call with retries + timing, auditing every attempt under the
+ * run's correlation id so the admin panel can trace retries of a single call.
+ */
 async function step<T>(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   name: string,
   provider: string,
   fn: () => Promise<T>,
 ): Promise<T> {
   const started = Date.now();
+  let attempt = 0;
   try {
-    const result = await withRetry(fn, { attempts: 3, baseDelayMs: 700 });
+    const result = await withRetry(
+      async () => {
+        attempt += 1;
+        const attemptStarted = Date.now();
+        try {
+          return await fn();
+        } catch (error) {
+          await logEvent(ctx.id, ctx.userId, name, {
+            provider,
+            level: "warn",
+            attempt,
+            correlationId: ctx.correlationId,
+            message: `attempt ${attempt} failed: ${
+              error instanceof Error ? error.message : "unknown error"
+            }`,
+            durationMs: Date.now() - attemptStarted,
+          });
+          throw error;
+        }
+      },
+      { attempts: 3, baseDelayMs: 700 },
+    );
     await logEvent(ctx.id, ctx.userId, name, {
       provider,
-      message: "ok",
+      message: `ok (attempt ${attempt})`,
+      attempt,
+      correlationId: ctx.correlationId,
       durationMs: Date.now() - started,
     });
     return result;
@@ -76,12 +119,15 @@ async function step<T>(
     await logEvent(ctx.id, ctx.userId, name, {
       provider,
       level: "error",
+      attempt,
+      correlationId: ctx.correlationId,
       message: error instanceof Error ? error.message : "Unknown provider error",
       durationMs: Date.now() - started,
     });
     throw error;
   }
 }
+
 
 function requireKey(name: string): string {
   const value = envKey(name);
@@ -150,7 +196,7 @@ async function chat(
 }
 
 export async function buildStoryboard(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   input: { prompt: string; platform: string | null; scriptText: string | null },
 ): Promise<Storyboard> {
   const userPrompt = [
@@ -225,7 +271,7 @@ async function stabilityImage(prompt: string): Promise<ArrayBuffer> {
 }
 
 export async function generateSceneImages(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
 ): Promise<string[]> {
   const db = await admin();
@@ -269,12 +315,13 @@ export async function signedUrl(path: string, expiresIn = 60 * 60 * 24 * 7): Pro
 const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM";
 
 export async function generateVoiceover(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
 ): Promise<string | null> {
   const key = envKey("ELEVENLABS_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "voiceover", {
+      correlationId: ctx.correlationId,
       provider: "elevenlabs",
       level: "warn",
       message: "ELEVENLABS_API_KEY missing — skipped narration.",
@@ -321,13 +368,14 @@ export async function generateVoiceover(
 const RUNWAY_VERSION = "2024-11-06";
 
 export async function generateVideo(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
   imageUrl: string,
 ): Promise<string | null> {
   const key = envKey("RUNWAY_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "video", {
+      correlationId: ctx.correlationId,
       provider: "runway",
       level: "warn",
       message: "RUNWAY_API_KEY missing — returned storyboard preview only.",
@@ -381,6 +429,7 @@ export async function generateVideo(
       };
       if (task.status === "SUCCEEDED" && task.output?.[0]) {
         await logEvent(ctx.id, ctx.userId, "video-ready", {
+          correlationId: ctx.correlationId,
           provider: "runway",
           message: "Render complete.",
         });
@@ -393,6 +442,7 @@ export async function generateVideo(
     throw new Error("Runway render timed out.");
   } catch (error) {
     await logEvent(ctx.id, ctx.userId, "video", {
+      correlationId: ctx.correlationId,
       provider: "runway",
       level: "warn",
       message: error instanceof Error ? error.message : "Runway unavailable.",
@@ -404,12 +454,13 @@ export async function generateVideo(
 // ---------------------------------------------------------------- 5. Coasty QA
 
 export async function coastyReview(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
 ): Promise<void> {
   const key = envKey("COASTY_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "review", {
+      correlationId: ctx.correlationId,
       provider: "coasty",
       level: "warn",
       message: "Coasty key missing — quality review and auto-publish skipped.",
@@ -432,6 +483,7 @@ export async function coastyReview(
     // provisions a machine and consumes Coasty credits.
     if (process.env.COASTY_AUTOPILOT !== "true") {
       await logEvent(ctx.id, ctx.userId, "review", {
+        correlationId: ctx.correlationId,
         provider: "coasty",
         message: "Coasty connected. Autonomous QA disabled (COASTY_AUTOPILOT is off).",
       });
@@ -468,19 +520,30 @@ export async function coastyReview(
 // ---------------------------------------------------------------- orchestrator
 
 export async function runPipeline(generationId: string, userId: string): Promise<void> {
-  const ctx = { id: generationId, userId };
   const db = await admin();
   const { data: row } = await db
     .from("generations")
-    .select("id, user_id, prompt, platform, script_text, status")
+    .select("id, user_id, prompt, platform, script_text, status, correlation_id")
     .eq("id", generationId)
     .maybeSingle();
 
   if (!row || row.user_id !== userId) throw new Error("Generation not found.");
   if (row.status === "running" || row.status === "complete") return;
 
-  await setProgress(generationId, { status: "running", current_step: "script", progress: 5 });
-  await logEvent(generationId, userId, "start", { message: "Pipeline started." });
+  const correlationId = row.correlation_id ?? newCorrelationId();
+  const ctx: PipelineCtx = { id: generationId, userId, correlationId };
+
+  await setProgress(generationId, {
+    status: "running",
+    current_step: "script",
+    progress: 5,
+    correlation_id: correlationId,
+  });
+  await logEvent(generationId, userId, "start", {
+    message: "Pipeline started.",
+    correlationId,
+  });
+
 
   try {
     const storyboard = await buildStoryboard(ctx, {
@@ -519,26 +582,31 @@ export async function runPipeline(generationId: string, userId: string): Promise
       progress: 100,
       error: null,
     });
-    await logEvent(generationId, userId, "complete", { message: "Pipeline finished." });
+    await logEvent(generationId, userId, "complete", {
+      message: "Pipeline finished.",
+      correlationId,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Generation failed.";
     await setProgress(generationId, { status: "failed", error: message });
-    await logEvent(generationId, userId, "failed", { level: "error", message });
+    await logEvent(generationId, userId, "failed", { level: "error", message, correlationId });
     throw error;
   }
 }
 
 async function generateSceneImagesSafe(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   storyboard: Storyboard,
 ): Promise<string[]> {
   try {
     return await generateSceneImages(ctx, storyboard);
   } catch (error) {
     await logEvent(ctx.id, ctx.userId, "visuals", {
+      correlationId: ctx.correlationId,
       level: "warn",
       message: error instanceof Error ? error.message : "Image generation unavailable.",
     });
     return [];
   }
+
 }
