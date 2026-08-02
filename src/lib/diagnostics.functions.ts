@@ -36,9 +36,10 @@ export type ProviderDiagnostic = {
  */
 export const getDiagnostics = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input?: { limit?: number; onlyFailures?: boolean }) => ({
+  .inputValidator((input?: { limit?: number; onlyFailures?: boolean; correlationId?: string }) => ({
     limit: Math.min(Math.max(input?.limit ?? 200, 20), 500),
     onlyFailures: Boolean(input?.onlyFailures),
+    correlationId: (input?.correlationId ?? "").trim().slice(0, 80),
   }))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
@@ -46,10 +47,13 @@ export const getDiagnostics = createServerFn({ method: "POST" })
 
     let query = supabaseAdmin
       .from("generation_events")
-      .select("id, generation_id, step, provider, level, message, duration_ms, created_at")
+      .select(
+        "id, generation_id, correlation_id, attempt, step, provider, level, message, duration_ms, created_at",
+      )
       .order("created_at", { ascending: false })
       .limit(data.limit);
     if (data.onlyFailures) query = query.in("level", ["error", "warn"]);
+    if (data.correlationId) query = query.eq("correlation_id", data.correlationId);
 
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
@@ -69,6 +73,8 @@ export const getDiagnostics = createServerFn({ method: "POST" })
       return {
         id: event.id,
         generationId: event.generation_id,
+        correlationId: event.correlation_id,
+        attempt: event.attempt,
         step: event.step,
         provider: event.provider,
         level: event.level,
@@ -79,6 +85,7 @@ export const getDiagnostics = createServerFn({ method: "POST" })
         generationStatus: generation?.status ?? null,
       };
     });
+
 
     const groups = new Map<string, ProviderDiagnostic & { total: number }>();
     for (const event of feed) {
