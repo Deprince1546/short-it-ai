@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       generation_events: {
         Row: {
+          attempt: number | null
+          correlation_id: string | null
           created_at: string
           duration_ms: number | null
           generation_id: string
@@ -27,6 +29,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempt?: number | null
+          correlation_id?: string | null
           created_at?: string
           duration_ms?: number | null
           generation_id: string
@@ -38,6 +42,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempt?: number | null
+          correlation_id?: string | null
           created_at?: string
           duration_ms?: number | null
           generation_id?: string
@@ -62,6 +68,7 @@ export type Database = {
         Row: {
           audio_url: string | null
           caption: string | null
+          correlation_id: string | null
           created_at: string
           current_step: string | null
           error: string | null
@@ -84,6 +91,7 @@ export type Database = {
         Insert: {
           audio_url?: string | null
           caption?: string | null
+          correlation_id?: string | null
           created_at?: string
           current_step?: string | null
           error?: string | null
@@ -106,6 +114,7 @@ export type Database = {
         Update: {
           audio_url?: string | null
           caption?: string | null
+          correlation_id?: string | null
           created_at?: string
           current_step?: string | null
           error?: string | null
