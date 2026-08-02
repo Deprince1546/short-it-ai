@@ -321,6 +321,7 @@ export async function generateVoiceover(
   const key = envKey("ELEVENLABS_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "voiceover", {
+      correlationId: ctx.correlationId,
       provider: "elevenlabs",
       level: "warn",
       message: "ELEVENLABS_API_KEY missing — skipped narration.",
@@ -374,6 +375,7 @@ export async function generateVideo(
   const key = envKey("RUNWAY_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "video", {
+      correlationId: ctx.correlationId,
       provider: "runway",
       level: "warn",
       message: "RUNWAY_API_KEY missing — returned storyboard preview only.",
@@ -427,6 +429,7 @@ export async function generateVideo(
       };
       if (task.status === "SUCCEEDED" && task.output?.[0]) {
         await logEvent(ctx.id, ctx.userId, "video-ready", {
+          correlationId: ctx.correlationId,
           provider: "runway",
           message: "Render complete.",
         });
@@ -439,6 +442,7 @@ export async function generateVideo(
     throw new Error("Runway render timed out.");
   } catch (error) {
     await logEvent(ctx.id, ctx.userId, "video", {
+      correlationId: ctx.correlationId,
       provider: "runway",
       level: "warn",
       message: error instanceof Error ? error.message : "Runway unavailable.",
@@ -456,6 +460,7 @@ export async function coastyReview(
   const key = envKey("COASTY_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "review", {
+      correlationId: ctx.correlationId,
       provider: "coasty",
       level: "warn",
       message: "Coasty key missing — quality review and auto-publish skipped.",
@@ -478,6 +483,7 @@ export async function coastyReview(
     // provisions a machine and consumes Coasty credits.
     if (process.env.COASTY_AUTOPILOT !== "true") {
       await logEvent(ctx.id, ctx.userId, "review", {
+        correlationId: ctx.correlationId,
         provider: "coasty",
         message: "Coasty connected. Autonomous QA disabled (COASTY_AUTOPILOT is off).",
       });
@@ -596,6 +602,7 @@ async function generateSceneImagesSafe(
     return await generateSceneImages(ctx, storyboard);
   } catch (error) {
     await logEvent(ctx.id, ctx.userId, "visuals", {
+      correlationId: ctx.correlationId,
       level: "warn",
       correlationId: ctx.correlationId,
       message: error instanceof Error ? error.message : "Image generation unavailable.",
