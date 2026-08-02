@@ -47,31 +47,32 @@ function Studio() {
   const [scriptText, setScriptText] = useState("");
   const [scriptName, setScriptName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  const downloadBundle = async (id: string) => {
-    setExporting(true);
+  const downloadVideo = async (id: string) => {
+    setDownloading(true);
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error("Session expired — sign in again.");
-      const response = await fetch(`/api/export/${id}`, {
+      const response = await fetch(`/api/video/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error("Export failed.");
+      if (!response.ok) throw new Error("Download failed.");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "short-it-export.zip";
+      link.download = "short-it.mp4";
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Export failed.");
+      toast.error(error instanceof Error ? error.message : "Download failed.");
     } finally {
-      setExporting(false);
+      setDownloading(false);
     }
   };
+
 
 
   const create = useServerFn(createGeneration);

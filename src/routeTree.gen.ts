@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedStudioRouteImport } from './routes/_authenticated/studio'
+import { Route as ApiVideoIdRouteImport } from './routes/api/video.$id'
 import { Route as ApiExportIdRouteImport } from './routes/api/export.$id'
 import { Route as AuthenticatedSettingsApiRouteImport } from './routes/_authenticated/settings.api'
 
@@ -35,6 +36,11 @@ const AuthenticatedStudioRoute = AuthenticatedStudioRouteImport.update({
   path: '/studio',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiVideoIdRoute = ApiVideoIdRouteImport.update({
+  id: '/api/video/$id',
+  path: '/api/video/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiExportIdRoute = ApiExportIdRouteImport.update({
   id: '/api/export/$id',
   path: '/api/export/$id',
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/studio': typeof AuthenticatedStudioRoute
   '/settings/api': typeof AuthenticatedSettingsApiRoute
   '/api/export/$id': typeof ApiExportIdRoute
+  '/api/video/$id': typeof ApiVideoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/studio': typeof AuthenticatedStudioRoute
   '/settings/api': typeof AuthenticatedSettingsApiRoute
   '/api/export/$id': typeof ApiExportIdRoute
+  '/api/video/$id': typeof ApiVideoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,12 +77,25 @@ export interface FileRoutesById {
   '/_authenticated/studio': typeof AuthenticatedStudioRoute
   '/_authenticated/settings/api': typeof AuthenticatedSettingsApiRoute
   '/api/export/$id': typeof ApiExportIdRoute
+  '/api/video/$id': typeof ApiVideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/studio' | '/settings/api' | '/api/export/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/studio'
+    | '/settings/api'
+    | '/api/export/$id'
+    | '/api/video/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/studio' | '/settings/api' | '/api/export/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/studio'
+    | '/settings/api'
+    | '/api/export/$id'
+    | '/api/video/$id'
   id:
     | '__root__'
     | '/'
@@ -83,6 +104,7 @@ export interface FileRouteTypes {
     | '/_authenticated/studio'
     | '/_authenticated/settings/api'
     | '/api/export/$id'
+    | '/api/video/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -90,6 +112,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiExportIdRoute: typeof ApiExportIdRoute
+  ApiVideoIdRoute: typeof ApiVideoIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -121,6 +144,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/studio'
       preLoaderRoute: typeof AuthenticatedStudioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/video/$id': {
+      id: '/api/video/$id'
+      path: '/api/video/$id'
+      fullPath: '/api/video/$id'
+      preLoaderRoute: typeof ApiVideoIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/export/$id': {
       id: '/api/export/$id'
@@ -157,6 +187,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiExportIdRoute: ApiExportIdRoute,
+  ApiVideoIdRoute: ApiVideoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
