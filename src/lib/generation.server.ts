@@ -604,7 +604,6 @@ async function generateSceneImagesSafe(
     await logEvent(ctx.id, ctx.userId, "visuals", {
       correlationId: ctx.correlationId,
       level: "warn",
-      correlationId: ctx.correlationId,
       message: error instanceof Error ? error.message : "Image generation unavailable.",
     });
     return [];
