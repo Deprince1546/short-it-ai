@@ -22,12 +22,26 @@ async function admin(): Promise<Admin> {
   return supabaseAdmin;
 }
 
+export type PipelineCtx = { id: string; userId: string; correlationId: string };
+
+/** Short, human-readable trace id shared by every call/retry of one run. */
+export function newCorrelationId(): string {
+  return `run_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 /** Audit log. Stores step/provider/duration/message only — never request keys. */
 export async function logEvent(
   generationId: string,
   userId: string,
   step: string,
-  opts: { provider?: string; level?: Level; message?: string; durationMs?: number } = {},
+  opts: {
+    provider?: string;
+    level?: Level;
+    message?: string;
+    durationMs?: number;
+    correlationId?: string;
+    attempt?: number;
+  } = {},
 ) {
   try {
     const db = await admin();
@@ -39,6 +53,8 @@ export async function logEvent(
       level: opts.level ?? "info",
       message: (opts.message ?? "").slice(0, 1000) || null,
       duration_ms: opts.durationMs ?? null,
+      correlation_id: opts.correlationId ?? null,
+      attempt: opts.attempt ?? null,
     });
   } catch (error) {
     console.error("[generation] audit log failed", error);
@@ -56,19 +72,46 @@ async function setProgress(
     .eq("id", generationId);
 }
 
-/** Runs a provider call with retries + timing, and audits the outcome. */
+/**
+ * Runs a provider call with retries + timing, auditing every attempt under the
+ * run's correlation id so the admin panel can trace retries of a single call.
+ */
 async function step<T>(
-  ctx: { id: string; userId: string },
+  ctx: PipelineCtx,
   name: string,
   provider: string,
   fn: () => Promise<T>,
 ): Promise<T> {
   const started = Date.now();
+  let attempt = 0;
   try {
-    const result = await withRetry(fn, { attempts: 3, baseDelayMs: 700 });
+    const result = await withRetry(
+      async () => {
+        attempt += 1;
+        const attemptStarted = Date.now();
+        try {
+          return await fn();
+        } catch (error) {
+          await logEvent(ctx.id, ctx.userId, name, {
+            provider,
+            level: "warn",
+            attempt,
+            correlationId: ctx.correlationId,
+            message: `attempt ${attempt} failed: ${
+              error instanceof Error ? error.message : "unknown error"
+            }`,
+            durationMs: Date.now() - attemptStarted,
+          });
+          throw error;
+        }
+      },
+      { attempts: 3, baseDelayMs: 700 },
+    );
     await logEvent(ctx.id, ctx.userId, name, {
       provider,
-      message: "ok",
+      message: `ok (attempt ${attempt})`,
+      attempt,
+      correlationId: ctx.correlationId,
       durationMs: Date.now() - started,
     });
     return result;
@@ -76,12 +119,15 @@ async function step<T>(
     await logEvent(ctx.id, ctx.userId, name, {
       provider,
       level: "error",
+      attempt,
+      correlationId: ctx.correlationId,
       message: error instanceof Error ? error.message : "Unknown provider error",
       durationMs: Date.now() - started,
     });
     throw error;
   }
 }
+
 
 function requireKey(name: string): string {
   const value = envKey(name);
