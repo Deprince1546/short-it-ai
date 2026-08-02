@@ -514,19 +514,30 @@ export async function coastyReview(
 // ---------------------------------------------------------------- orchestrator
 
 export async function runPipeline(generationId: string, userId: string): Promise<void> {
-  const ctx = { id: generationId, userId };
   const db = await admin();
   const { data: row } = await db
     .from("generations")
-    .select("id, user_id, prompt, platform, script_text, status")
+    .select("id, user_id, prompt, platform, script_text, status, correlation_id")
     .eq("id", generationId)
     .maybeSingle();
 
   if (!row || row.user_id !== userId) throw new Error("Generation not found.");
   if (row.status === "running" || row.status === "complete") return;
 
-  await setProgress(generationId, { status: "running", current_step: "script", progress: 5 });
-  await logEvent(generationId, userId, "start", { message: "Pipeline started." });
+  const correlationId = row.correlation_id ?? newCorrelationId();
+  const ctx: PipelineCtx = { id: generationId, userId, correlationId };
+
+  await setProgress(generationId, {
+    status: "running",
+    current_step: "script",
+    progress: 5,
+    correlation_id: correlationId,
+  });
+  await logEvent(generationId, userId, "start", {
+    message: "Pipeline started.",
+    correlationId,
+  });
+
 
   try {
     const storyboard = await buildStoryboard(ctx, {
