@@ -5,6 +5,8 @@ import { assertAdmin } from "./providers.server";
 export type DiagnosticEvent = {
   id: string;
   generationId: string;
+  correlationId: string | null;
+  attempt: number | null;
   step: string;
   provider: string | null;
   level: string;
@@ -14,6 +16,7 @@ export type DiagnosticEvent = {
   generationTitle: string | null;
   generationStatus: string | null;
 };
+
 
 export type ProviderDiagnostic = {
   provider: string;
