@@ -40,6 +40,7 @@ function ApiSettings() {
   const runAll = useServerFn(testAllProviders);
   const fetchDiagnostics = useServerFn(getDiagnostics);
   const [onlyFailures, setOnlyFailures] = useState(false);
+  const [trace, setTrace] = useState("");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["providers"],
@@ -48,11 +49,12 @@ function ApiSettings() {
   });
 
   const diagnostics = useQuery({
-    queryKey: ["diagnostics", onlyFailures],
-    queryFn: () => fetchDiagnostics({ data: { onlyFailures, limit: 200 } }),
+    queryKey: ["diagnostics", onlyFailures, trace],
+    queryFn: () => fetchDiagnostics({ data: { onlyFailures, limit: 200, correlationId: trace } }),
     retry: false,
     refetchInterval: 15_000,
   });
+
 
 
   const single = useMutation({
