@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { runPipeline } from "./generation.server";
+import { newCorrelationId, runPipeline } from "./generation.server";
 
 export const createGeneration = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -11,6 +11,7 @@ export const createGeneration = createServerFn({ method: "POST" })
     return { prompt, platform: (input?.platform ?? "").trim().slice(0, 60), scriptText };
   })
   .handler(async ({ data, context }) => {
+    const correlationId = newCorrelationId();
     const { data: row, error } = await context.supabase
       .from("generations")
       .insert({
@@ -21,12 +22,14 @@ export const createGeneration = createServerFn({ method: "POST" })
         status: "queued",
         current_step: "queued",
         progress: 0,
+        correlation_id: correlationId,
       })
-      .select("id")
+      .select("id, correlation_id")
       .single();
     if (error) throw new Error(error.message);
-    return { id: row.id };
+    return { id: row.id, correlationId };
   });
+
 
 export const processGeneration = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
