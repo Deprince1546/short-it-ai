@@ -355,7 +355,7 @@ export async function generateVideo(
   ctx: PipelineCtx,
   storyboard: Storyboard,
   imageUrl: string,
-): Promise<string | null> {
+): Promise<{ url: string | null; error: string | null }> {
   const key = envKey("RUNWAY_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "video", {
@@ -364,7 +364,7 @@ export async function generateVideo(
       level: "warn",
       message: "RUNWAY_API_KEY missing — returned storyboard preview only.",
     });
-    return null;
+    return { url: null, error: "Video rendering is not configured." };
   }
 
   const headers = {
@@ -405,7 +405,20 @@ export async function generateVideo(
         { headers },
         30_000,
       );
-      if (!response.ok) continue;
+      if (!response.ok) {
+        const detail = (await response.text().catch(() => "")).slice(0, 300);
+        if (response.status === 429) {
+          await logEvent(ctx.id, ctx.userId, "video-status", {
+            correlationId: ctx.correlationId,
+            provider: "runway",
+            level: "warn",
+            attempt: attempt + 1,
+            message: `Status polling rate limited. ${detail}`.trim(),
+          });
+          continue;
+        }
+        throw new Error(`Runway status check responded ${response.status}. ${detail}`.trim());
+      }
       const task = (await response.json()) as {
         status?: string;
         output?: string[];
@@ -417,7 +430,7 @@ export async function generateVideo(
           provider: "runway",
           message: "Render complete.",
         });
-        return task.output[0];
+        return { url: task.output[0], error: null };
       }
       if (task.status === "FAILED") {
         throw new Error(task.failure ?? "Runway render failed.");
@@ -431,7 +444,10 @@ export async function generateVideo(
       level: "warn",
       message: error instanceof Error ? error.message : "Runway unavailable.",
     });
-    return null;
+    return {
+      url: null,
+      error: error instanceof Error ? error.message : "Video rendering is unavailable.",
+    };
   }
 }
 
@@ -447,7 +463,7 @@ async function persistVideo(
   const db = await admin();
   const { error } = await db.storage
     .from("generated-media")
-    .upload(path, response.body ?? (await response.arrayBuffer()), {
+    .upload(path, await response.arrayBuffer(), {
       contentType: response.headers.get("content-type") ?? "video/mp4",
       upsert: true,
     });
@@ -573,10 +589,10 @@ export async function runPipeline(generationId: string, userId: string): Promise
       audio_url: audio?.url ?? null,
     });
 
-    const providerVideoUrl = images.urls[0]
+    const providerVideo = images.urls[0]
       ? await generateVideo(ctx, storyboard, images.urls[0])
-      : null;
-    const video = await persistVideo(ctx, providerVideoUrl);
+      : { url: null, error: "No scene image was available for video rendering." };
+    const video = await persistVideo(ctx, providerVideo.url);
     await setProgress(generationId, {
       current_step: "review",
       progress: 90,
@@ -587,13 +603,18 @@ export async function runPipeline(generationId: string, userId: string): Promise
     await coastyReview(ctx, storyboard);
 
     await setProgress(generationId, {
-      status: "complete",
+      status: video ? "complete" : images.urls.length ? "partial" : "failed",
       current_step: "done",
       progress: 100,
-      error: null,
+      error: video
+        ? null
+        : images.urls.length
+          ? "Scene previews are ready, but the MP4 could not be rendered. Check provider credits and try again."
+          : "No media could be generated. Check provider status and try again.",
     });
-    await logEvent(generationId, userId, "complete", {
-      message: "Pipeline finished.",
+    await logEvent(generationId, userId, video ? "complete" : "partial", {
+      level: video ? "info" : "warn",
+      message: video ? "Pipeline finished." : providerVideo.error ?? "Pipeline produced previews only.",
       correlationId,
     });
   } catch (error) {

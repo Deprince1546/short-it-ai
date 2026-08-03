@@ -51,6 +51,9 @@ function Studio() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [scenePreviews, setScenePreviews] = useState<ScenePreview[]>([]);
+  const [selectedScene, setSelectedScene] = useState(0);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
 
   const downloadVideo = async (id: string) => {
     setDownloading(true);
@@ -116,7 +119,7 @@ function Studio() {
       const { data, error } = await supabase
         .from("generations")
         .select(
-          "id, prompt, platform, status, current_step, progress, video_url, video_path, scene_image_paths, thumbnail_url, audio_url, title, caption, hashtags, error, created_at",
+          "id, prompt, platform, status, current_step, progress, video_url, video_path, scene_image_paths, thumbnail_url, audio_url, audio_path, title, caption, hashtags, error, created_at",
         )
         .order("created_at", { ascending: false })
         .limit(20);
@@ -172,6 +175,7 @@ function Studio() {
   useEffect(() => {
     let cancelled = false;
     const paths = active?.scene_image_paths ?? [];
+    setSelectedScene(0);
     if (!paths.length) {
       setScenePreviews([]);
       return;
@@ -191,6 +195,29 @@ function Studio() {
       cancelled = true;
     };
   }, [active?.scene_image_paths]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const signMedia = async () => {
+      const videoPath = active?.video_path;
+      const audioPath = active?.audio_path;
+      const [videoResult, audioResult] = await Promise.all([
+        videoPath
+          ? supabase.storage.from("generated-media").createSignedUrl(videoPath, 60 * 60)
+          : Promise.resolve({ data: null }),
+        audioPath
+          ? supabase.storage.from("generated-media").createSignedUrl(audioPath, 60 * 60)
+          : Promise.resolve({ data: null }),
+      ]);
+      if (cancelled) return;
+      setVideoPreviewUrl(videoResult.data?.signedUrl ?? active?.video_url ?? null);
+      setAudioPreviewUrl(audioResult.data?.signedUrl ?? active?.audio_url ?? null);
+    };
+    void signMedia();
+    return () => {
+      cancelled = true;
+    };
+  }, [active?.audio_path, active?.audio_url, active?.video_path, active?.video_url]);
 
   return (
     <main className="min-h-screen bg-black px-4 md:px-6 py-8 md:py-10">
@@ -293,21 +320,21 @@ function Studio() {
                 style={{ width: `${active.progress}%` }}
               />
             </div>
-            {active.video_url && (
+            {videoPreviewUrl && (
               <video
-                src={active.video_url}
-                poster={active.thumbnail_url ?? undefined}
+                src={videoPreviewUrl}
+                poster={scenePreviews[selectedScene]?.url ?? active.thumbnail_url ?? undefined}
                 controls
                 playsInline
                 preload="metadata"
                 className="mt-5 w-full rounded-2xl bg-black"
               />
             )}
-            {!active.video_url && active.thumbnail_url && (
+            {!videoPreviewUrl && (scenePreviews[selectedScene]?.url || active.thumbnail_url) && (
               <img
-                src={active.thumbnail_url}
-                alt={active.title ?? "Generated scene"}
-                className="mt-5 w-full rounded-2xl"
+                src={scenePreviews[selectedScene]?.url ?? active.thumbnail_url ?? undefined}
+                alt={`Scene ${selectedScene + 1} preview`}
+                className="mt-5 aspect-[9/16] max-h-[36rem] w-full rounded-2xl object-contain"
               />
             )}
             {scenePreviews.length > 0 && (
@@ -316,13 +343,9 @@ function Studio() {
                   <button
                     key={scene.path}
                     type="button"
-                    onClick={() =>
-                      setScenePreviews((items) => [
-                        scene,
-                        ...items.filter((item) => item.path !== scene.path),
-                      ])
-                    }
-                    className="liquid-glass w-24 shrink-0 rounded-lg p-1 text-left"
+                    onClick={() => setSelectedScene(index)}
+                    aria-pressed={selectedScene === index}
+                    className={`liquid-glass w-24 shrink-0 rounded-lg p-1 text-left ${selectedScene === index ? "ring-2 ring-white/70" : ""}`}
                     title={`Preview scene ${index + 1}`}
                   >
                     <img
@@ -337,14 +360,14 @@ function Studio() {
                 ))}
               </div>
             )}
-            {active.audio_url && <audio src={active.audio_url} controls className="mt-4 w-full" />}
+            {audioPreviewUrl && <audio src={audioPreviewUrl} controls className="mt-4 w-full" />}
             {active.caption && <p className="mt-4 text-white/70 text-sm">{active.caption}</p>}
             {active.hashtags?.length ? (
               <p className="mt-2 text-white/40 text-xs">{active.hashtags.join(" ")}</p>
             ) : null}
             {active.error && <p className="mt-3 text-red-400 text-xs">{active.error}</p>}
 
-            {active.video_url ? (
+            {active.video_path || active.video_url ? (
               <button
                 onClick={() => void downloadVideo(active.id)}
                 disabled={downloading}
