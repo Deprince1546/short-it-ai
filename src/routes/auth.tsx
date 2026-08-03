@@ -41,8 +41,12 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: destination, replace: true });
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        const saved = sessionStorage.getItem("shortit:redirect");
+        sessionStorage.removeItem("shortit:redirect");
+        navigate({ to: safePath(saved ?? destination), replace: true });
+      }
     });
   }, [destination, navigate]);
 
@@ -51,14 +55,18 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}${destination}` },
+          options: { emailRedirectTo: `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}` },
         });
         if (error) throw error;
-        toast.success("Account created. You can sign in now.");
-        setMode("signin");
+        if (data.session) {
+          navigate({ to: destination, replace: true });
+        } else {
+          toast.success("Check your email to confirm your account, then sign in.");
+          setMode("signin");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;

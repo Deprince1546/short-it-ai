@@ -11,6 +11,8 @@ import {
   processGeneration,
 } from "@/lib/generation.functions";
 
+type ScenePreview = { path: string; url: string };
+
 const PLATFORMS = [
   "TikTok Shorts",
   "YouTube Shorts",
@@ -48,6 +50,7 @@ function Studio() {
   const [scriptName, setScriptName] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [scenePreviews, setScenePreviews] = useState<ScenePreview[]>([]);
 
   const downloadVideo = async (id: string) => {
     setDownloading(true);
@@ -115,7 +118,7 @@ function Studio() {
       const { data, error } = await supabase
         .from("generations")
         .select(
-          "id, prompt, platform, status, current_step, progress, video_url, thumbnail_url, audio_url, title, caption, hashtags, error, created_at",
+          "id, prompt, platform, status, current_step, progress, video_url, video_path, scene_image_paths, thumbnail_url, audio_url, title, caption, hashtags, error, created_at",
         )
         .order("created_at", { ascending: false })
         .limit(20);
@@ -167,6 +170,29 @@ function Studio() {
   };
 
   const active = generations?.find((g) => g.id === activeId);
+
+  useEffect(() => {
+    let cancelled = false;
+    const paths = active?.scene_image_paths ?? [];
+    if (!paths.length) {
+      setScenePreviews([]);
+      return;
+    }
+    void supabase.storage
+      .from("generated-media")
+      .createSignedUrls(paths, 60 * 60)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setScenePreviews(
+          (data ?? []).flatMap((item, index) =>
+            item.signedUrl ? [{ path: paths[index], url: item.signedUrl }] : [],
+          ),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [active?.scene_image_paths]);
 
   return (
     <main className="min-h-screen bg-black px-4 md:px-6 py-8 md:py-10">
@@ -285,6 +311,26 @@ function Studio() {
                 alt={active.title ?? "Generated scene"}
                 className="mt-5 w-full rounded-2xl"
               />
+            )}
+            {scenePreviews.length > 0 && (
+              <div className="mt-4 flex gap-3 overflow-x-auto pb-2" aria-label="Scene previews">
+                {scenePreviews.map((scene, index) => (
+                  <button
+                    key={scene.path}
+                    type="button"
+                    onClick={() => setScenePreviews((items) => [scene, ...items.filter((item) => item.path !== scene.path)])}
+                    className="liquid-glass w-24 shrink-0 rounded-lg p-1 text-left"
+                    title={`Preview scene ${index + 1}`}
+                  >
+                    <img
+                      src={scene.url}
+                      alt={`Scene ${index + 1} preview`}
+                      className="aspect-[9/16] w-full rounded-md object-cover"
+                    />
+                    <span className="mt-1 block text-center text-[10px] text-white/50">Scene {index + 1}</span>
+                  </button>
+                ))}
+              </div>
             )}
             {active.audio_url && <audio src={active.audio_url} controls className="mt-4 w-full" />}
             {active.caption && <p className="mt-4 text-white/70 text-sm">{active.caption}</p>}

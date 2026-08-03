@@ -213,7 +213,7 @@ export async function buildStoryboard(
         chat(
           "https://openrouter.ai/api/v1/chat/completions",
           key,
-          "google/gemini-2.0-flash-001",
+          "google/gemini-2.5-flash",
           userPrompt,
         ),
       ),
@@ -273,8 +273,9 @@ async function stabilityImage(prompt: string): Promise<ArrayBuffer> {
 export async function generateSceneImages(
   ctx: PipelineCtx,
   storyboard: Storyboard,
-): Promise<string[]> {
+): Promise<{ paths: string[]; urls: string[] }> {
   const db = await admin();
+  const paths: string[] = [];
   const urls: string[] = [];
 
   for (const [index, scene] of storyboard.scenes.entries()) {
@@ -295,10 +296,11 @@ export async function generateSceneImages(
       .from("generated-media")
       .upload(path, bytes, { contentType: "image/png", upsert: true });
     if (error) throw new Error(`Storage upload failed: ${error.message}`);
+    paths.push(path);
     urls.push(await signedUrl(path));
   }
 
-  return urls;
+  return { paths, urls };
 }
 
 export async function signedUrl(path: string, expiresIn = 60 * 60 * 24 * 7): Promise<string> {
@@ -317,7 +319,7 @@ const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM";
 export async function generateVoiceover(
   ctx: PipelineCtx,
   storyboard: Storyboard,
-): Promise<string | null> {
+): Promise<{ path: string; url: string } | null> {
   const key = envKey("ELEVENLABS_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "voiceover", {
@@ -357,7 +359,7 @@ export async function generateVoiceover(
       .from("generated-media")
       .upload(path, bytes, { contentType: "audio/mpeg", upsert: true });
     if (error) throw new Error(`Storage upload failed: ${error.message}`);
-    return await signedUrl(path);
+    return { path, url: await signedUrl(path) };
   } catch {
     return null;
   }
@@ -449,6 +451,24 @@ export async function generateVideo(
     });
     return null;
   }
+}
+
+async function persistVideo(
+  ctx: PipelineCtx,
+  sourceUrl: string | null,
+): Promise<{ path: string; url: string } | null> {
+  if (!sourceUrl) return null;
+  const response = await step(ctx, "video-store", "storage", async () =>
+    ok(await fetchWithTimeout(sourceUrl, {}, 180_000), "Video download"),
+  );
+  const path = `${ctx.userId}/${ctx.id}/final.mp4`;
+  const db = await admin();
+  const { error } = await db.storage.from("generated-media").upload(path, response.body ?? await response.arrayBuffer(), {
+    contentType: response.headers.get("content-type") ?? "video/mp4",
+    upsert: true,
+  });
+  if (error) throw new Error(`Video storage failed: ${error.message}`);
+  return { path, url: await signedUrl(path) };
 }
 
 // ---------------------------------------------------------------- 5. Coasty QA
@@ -565,14 +585,28 @@ export async function runPipeline(generationId: string, userId: string): Promise
     await setProgress(generationId, {
       current_step: "voiceover",
       progress: 55,
-      thumbnail_url: images[0] ?? null,
+      scene_image_paths: images.paths,
+      thumbnail_url: images.urls[0] ?? null,
     });
 
-    const audioUrl = await generateVoiceover(ctx, storyboard);
-    await setProgress(generationId, { current_step: "video", progress: 70, audio_url: audioUrl });
+    const audio = await generateVoiceover(ctx, storyboard);
+    await setProgress(generationId, {
+      current_step: "video",
+      progress: 70,
+      audio_path: audio?.path ?? null,
+      audio_url: audio?.url ?? null,
+    });
 
-    const videoUrl = images[0] ? await generateVideo(ctx, storyboard, images[0]) : null;
-    await setProgress(generationId, { current_step: "review", progress: 90, video_url: videoUrl });
+    const providerVideoUrl = images.urls[0]
+      ? await generateVideo(ctx, storyboard, images.urls[0])
+      : null;
+    const video = await persistVideo(ctx, providerVideoUrl);
+    await setProgress(generationId, {
+      current_step: "review",
+      progress: 90,
+      video_path: video?.path ?? null,
+      video_url: video?.url ?? null,
+    });
 
     await coastyReview(ctx, storyboard);
 
@@ -597,7 +631,7 @@ export async function runPipeline(generationId: string, userId: string): Promise
 async function generateSceneImagesSafe(
   ctx: PipelineCtx,
   storyboard: Storyboard,
-): Promise<string[]> {
+): Promise<{ paths: string[]; urls: string[] }> {
   try {
     return await generateSceneImages(ctx, storyboard);
   } catch (error) {
@@ -606,7 +640,7 @@ async function generateSceneImagesSafe(
       level: "warn",
       message: error instanceof Error ? error.message : "Image generation unavailable.",
     });
-    return [];
+    return { paths: [], urls: [] };
   }
 
 }
