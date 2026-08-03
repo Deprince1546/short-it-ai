@@ -18,25 +18,37 @@ export const Route = createFileRoute("/api/video/$id")({
 
         const { data: generation } = await supabaseAdmin
           .from("generations")
-          .select("id, user_id, title, prompt, video_url")
+          .select("id, user_id, title, prompt, video_path, video_url")
           .eq("id", params.id)
           .maybeSingle();
 
         if (!generation || generation.user_id !== userId) {
           return new Response("Not found", { status: 404 });
         }
-        if (!generation.video_url) {
+        if (!generation.video_path && !generation.video_url) {
           return new Response("This generation has no video yet.", { status: 409 });
         }
 
-        const upstream = await fetch(generation.video_url);
+        const sourceUrl = generation.video_path
+          ? (
+              await supabaseAdmin.storage
+                .from("generated-media")
+                .createSignedUrl(generation.video_path, 60)
+            ).data?.signedUrl
+          : generation.video_url;
+        if (!sourceUrl) return new Response("Video is no longer available.", { status: 502 });
+
+        const upstream = await fetch(sourceUrl);
         if (!upstream.ok || !upstream.body) {
           return new Response("Video is no longer available.", { status: 502 });
         }
 
         const title = generation.title ?? generation.prompt ?? "short-it";
         const safeTitle =
-          title.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 50) || "short-it";
+          title
+            .replace(/[^a-z0-9]+/gi, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 50) || "short-it";
 
         return new Response(upstream.body, {
           headers: {

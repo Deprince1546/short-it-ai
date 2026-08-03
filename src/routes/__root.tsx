@@ -79,14 +79,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Short It — AI Short-Form Video Studio" },
+      {
+        name: "description",
+        content: "Create platform-ready short-form videos from an idea or script with Short It.",
+      },
+      { name: "author", content: "Short It" },
+      { property: "og:title", content: "Short It — AI Short-Form Video Studio" },
+      {
+        property: "og:description",
+        content: "Create platform-ready short-form videos from an idea or script.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
