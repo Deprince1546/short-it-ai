@@ -66,6 +66,7 @@ export type Database = {
       }
       generations: {
         Row: {
+          audio_path: string | null
           audio_url: string | null
           caption: string | null
           correlation_id: string | null
@@ -78,6 +79,7 @@ export type Database = {
           progress: number
           prompt: string | null
           published: Json | null
+          scene_image_paths: string[]
           script_path: string | null
           script_text: string | null
           status: string
@@ -86,9 +88,11 @@ export type Database = {
           title: string | null
           updated_at: string
           user_id: string
+          video_path: string | null
           video_url: string | null
         }
         Insert: {
+          audio_path?: string | null
           audio_url?: string | null
           caption?: string | null
           correlation_id?: string | null
@@ -101,6 +105,7 @@ export type Database = {
           progress?: number
           prompt?: string | null
           published?: Json | null
+          scene_image_paths?: string[]
           script_path?: string | null
           script_text?: string | null
           status?: string
@@ -109,9 +114,11 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id: string
+          video_path?: string | null
           video_url?: string | null
         }
         Update: {
+          audio_path?: string | null
           audio_url?: string | null
           caption?: string | null
           correlation_id?: string | null
@@ -124,6 +131,7 @@ export type Database = {
           progress?: number
           prompt?: string | null
           published?: Json | null
+          scene_image_paths?: string[]
           script_path?: string | null
           script_text?: string | null
           status?: string
@@ -132,6 +140,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id?: string
+          video_path?: string | null
           video_url?: string | null
         }
         Relationships: []
