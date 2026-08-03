@@ -45,7 +45,10 @@ export const Route = createFileRoute("/api/video/$id")({
 
         const title = generation.title ?? generation.prompt ?? "short-it";
         const safeTitle =
-          title.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 50) || "short-it";
+          title
+            .replace(/[^a-z0-9]+/gi, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 50) || "short-it";
 
         return new Response(upstream.body, {
           headers: {
