@@ -76,8 +76,6 @@ function Studio() {
     }
   };
 
-
-
   const create = useServerFn(createGeneration);
   const process = useServerFn(processGeneration);
   const fetchEvents = useServerFn(getGenerationEvents);
@@ -318,7 +316,12 @@ function Studio() {
                   <button
                     key={scene.path}
                     type="button"
-                    onClick={() => setScenePreviews((items) => [scene, ...items.filter((item) => item.path !== scene.path)])}
+                    onClick={() =>
+                      setScenePreviews((items) => [
+                        scene,
+                        ...items.filter((item) => item.path !== scene.path),
+                      ])
+                    }
                     className="liquid-glass w-24 shrink-0 rounded-lg p-1 text-left"
                     title={`Preview scene ${index + 1}`}
                   >
@@ -327,7 +330,9 @@ function Studio() {
                       alt={`Scene ${index + 1} preview`}
                       className="aspect-[9/16] w-full rounded-md object-cover"
                     />
-                    <span className="mt-1 block text-center text-[10px] text-white/50">Scene {index + 1}</span>
+                    <span className="mt-1 block text-center text-[10px] text-white/50">
+                      Scene {index + 1}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -353,7 +358,6 @@ function Studio() {
               </p>
             )}
 
-
             {events?.length ? (
               <div className="mt-5 border-t border-white/10 pt-4 space-y-1">
                 {events.map((event) => (
@@ -364,7 +368,6 @@ function Studio() {
                 ))}
               </div>
             ) : null}
-
           </section>
         )}
 

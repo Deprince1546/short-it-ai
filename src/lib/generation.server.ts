@@ -13,9 +13,7 @@ export type Storyboard = {
 
 type Level = "info" | "warn" | "error";
 
-type Admin = Awaited<
-  typeof import("@/integrations/supabase/client.server")
->["supabaseAdmin"];
+type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
 async function admin(): Promise<Admin> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -61,10 +59,7 @@ export async function logEvent(
   }
 }
 
-async function setProgress(
-  generationId: string,
-  patch: Record<string, unknown>,
-) {
+async function setProgress(generationId: string, patch: Record<string, unknown>) {
   const db = await admin();
   await db
     .from("generations")
@@ -128,13 +123,11 @@ async function step<T>(
   }
 }
 
-
 function requireKey(name: string): string {
   const value = envKey(name);
   if (!value) throw new Error(`${name} is not configured. Add it in API Configuration.`);
   return value;
 }
-
 
 async function ok(response: Response, provider: string): Promise<Response> {
   if (response.ok) return response;
@@ -162,12 +155,7 @@ function parseStoryboard(raw: string): Storyboard {
   return parsed;
 }
 
-async function chat(
-  url: string,
-  key: string,
-  model: string,
-  userPrompt: string,
-): Promise<string> {
+async function chat(url: string, key: string, model: string, userPrompt: string): Promise<string> {
   const response = await ok(
     await fetchWithTimeout(
       url,
@@ -239,11 +227,7 @@ async function pollinationsImage(prompt: string): Promise<ArrayBuffer> {
   const key = envKey("POLLINATIONS_API_KEY");
   const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=720&height=1280&nologo=true&model=flux`;
   const response = await ok(
-    await fetchWithTimeout(
-      url,
-      { headers: key ? { Authorization: `Bearer ${key}` } : {} },
-      60_000,
-    ),
+    await fetchWithTimeout(url, { headers: key ? { Authorization: `Bearer ${key}` } : {} }, 60_000),
     "Pollinations",
   );
   return response.arrayBuffer();
@@ -305,9 +289,7 @@ export async function generateSceneImages(
 
 export async function signedUrl(path: string, expiresIn = 60 * 60 * 24 * 7): Promise<string> {
   const db = await admin();
-  const { data, error } = await db.storage
-    .from("generated-media")
-    .createSignedUrl(path, expiresIn);
+  const { data, error } = await db.storage.from("generated-media").createSignedUrl(path, expiresIn);
   if (error || !data) throw new Error(`Could not sign media URL: ${error?.message}`);
   return data.signedUrl;
 }
@@ -463,20 +445,19 @@ async function persistVideo(
   );
   const path = `${ctx.userId}/${ctx.id}/final.mp4`;
   const db = await admin();
-  const { error } = await db.storage.from("generated-media").upload(path, response.body ?? await response.arrayBuffer(), {
-    contentType: response.headers.get("content-type") ?? "video/mp4",
-    upsert: true,
-  });
+  const { error } = await db.storage
+    .from("generated-media")
+    .upload(path, response.body ?? (await response.arrayBuffer()), {
+      contentType: response.headers.get("content-type") ?? "video/mp4",
+      upsert: true,
+    });
   if (error) throw new Error(`Video storage failed: ${error.message}`);
   return { path, url: await signedUrl(path) };
 }
 
 // ---------------------------------------------------------------- 5. Coasty QA
 
-export async function coastyReview(
-  ctx: PipelineCtx,
-  storyboard: Storyboard,
-): Promise<void> {
+export async function coastyReview(ctx: PipelineCtx, storyboard: Storyboard): Promise<void> {
   const key = envKey("COASTY_API_KEY");
   if (!key) {
     await logEvent(ctx.id, ctx.userId, "review", {
@@ -492,10 +473,7 @@ export async function coastyReview(
   try {
     // Cheap reachability + entitlement probe before spending agent steps.
     await step(ctx, "review", "coasty", async () => {
-      await ok(
-        await fetchWithTimeout(`${coastyBase()}/v1/models`, { headers }, 20_000),
-        "Coasty",
-      );
+      await ok(await fetchWithTimeout(`${coastyBase()}/v1/models`, { headers }, 20_000), "Coasty");
       return true;
     });
 
@@ -536,7 +514,6 @@ export async function coastyReview(
   }
 }
 
-
 // ---------------------------------------------------------------- orchestrator
 
 export async function runPipeline(generationId: string, userId: string): Promise<void> {
@@ -563,7 +540,6 @@ export async function runPipeline(generationId: string, userId: string): Promise
     message: "Pipeline started.",
     correlationId,
   });
-
 
   try {
     const storyboard = await buildStoryboard(ctx, {
@@ -642,5 +618,4 @@ async function generateSceneImagesSafe(
     });
     return { paths: [], urls: [] };
   }
-
 }

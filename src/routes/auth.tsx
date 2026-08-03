@@ -58,7 +58,9 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth?redirect=${encodeURIComponent(destination)}`,
+          },
         });
         if (error) throw error;
         if (data.session) {
@@ -152,9 +154,7 @@ function AuthPage() {
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           className="mt-6 w-full text-white/50 hover:text-white text-xs"
         >
-          {mode === "signin"
-            ? "No account yet? Create one"
-            : "Already have an account? Sign in"}
+          {mode === "signin" ? "No account yet? Create one" : "Already have an account? Sign in"}
         </button>
       </div>
     </main>
